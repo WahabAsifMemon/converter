@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Download JPG Files</title>
+</head>
+<body>
+    <h1>Download JPG Files</h1>
+    <ul>
+        {% for image in images %}
+        <li><a href="{{ url_for('download_file', filename=image.split('/')[-1]) }}">{{ image.split('/')[-1] }}</a></li>
+        {% endfor %}
+    </ul>
+</body>
+</html>
