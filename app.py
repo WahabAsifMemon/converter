@@ -9,7 +9,6 @@ import datetime
 app = Flask(__name__)
 UPLOAD_FOLDER = 'uploads'
 OUTPUT_FOLDER = 'output'
-POPPLER_PATH = r'C:\poppler-utils\Library\bin'
 
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
@@ -37,7 +36,7 @@ def upload_file():
         if file:
             file_path = os.path.join(UPLOAD_FOLDER, file.filename)
             file.save(file_path)
-            images = convert_from_path(file_path, poppler_path=POPPLER_PATH)
+            images = convert_from_path(file_path)
             image_files = []
             for i, image in enumerate(images):
                 image_filename = f'page_{i + 1}.jpg'
