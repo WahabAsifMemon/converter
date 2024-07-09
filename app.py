@@ -47,7 +47,7 @@ def upload_file():
             return jsonify({'images': image_files})
     except Exception as e:
         logging.error(f'Error during file upload: {e}')
-        return jsonify({'error': 'File upload failed'}), 500
+        return jsonify({'error': f'File upload failed: {str(e)}'}), 500
 
 @app.route('/download_all')
 def download_all():
@@ -63,7 +63,7 @@ def download_all():
         return send_file(zip_buffer, mimetype='application/zip', as_attachment=True, download_name=zip_filename)
     except Exception as e:
         logging.error(f'Error during file download: {e}')
-        return jsonify({'error': 'File download failed'}), 500
+        return jsonify({'error': f'File download failed: {str(e)}'}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
