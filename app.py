@@ -19,6 +19,7 @@ if not os.path.exists(OUTPUT_FOLDER):
 # Configure logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(message)s')
 
+
 def clear_folder(folder_path):
     for filename in os.listdir(folder_path):
         file_path = os.path.join(folder_path, filename)
@@ -30,9 +31,11 @@ def clear_folder(folder_path):
         except Exception as e:
             logging.error(f'Failed to delete {file_path}. Reason: {e}')
 
+
 @app.route('/')
 def index():
     return render_template('index.html')
+
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
@@ -57,26 +60,37 @@ def upload_file():
                 image_path = os.path.join(OUTPUT_FOLDER, image_filename)
                 image.save(image_path, 'JPEG')
                 image_files.append(image_filename)
-            return jsonify({'images': image_files})
+
+            # Store original filename for use in download filename
+            original_filename = os.path.splitext(file.filename)[0]
+
+            return jsonify({'images': image_files, 'original_filename': original_filename})
     except Exception as e:
         logging.error(f'Error during file upload: {e}')
         return jsonify({'error': f'File upload failed: {str(e)}'}), 500
+
 
 @app.route('/download_all')
 def download_all():
     try:
         image_files = request.args.get('images').split(',')
+        original_filename = request.args.get('filename', 'images')
+
         zip_buffer = io.BytesIO()
         with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
             for image in image_files:
                 zip_file.write(os.path.join(OUTPUT_FOLDER, image), image)
         zip_buffer.seek(0)
+
+        # Constructing the zip filename based on the original filename
         timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
-        zip_filename = f'images_{timestamp}.zip'
+        zip_filename = f'{original_filename}_{timestamp}.zip'
+
         return send_file(zip_buffer, mimetype='application/zip', as_attachment=True, download_name=zip_filename)
     except Exception as e:
         logging.error(f'Error during file download: {e}')
         return jsonify({'error': f'File download failed: {str(e)}'}), 500
+
 
 if __name__ == '__main__':
     app.run(debug=True)
