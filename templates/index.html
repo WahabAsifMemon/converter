@@ -42,7 +42,6 @@
             display: none;
         }
         button {
-
             background-color: #5a67d8;
             color: #fff;
             border: none;
@@ -107,8 +106,9 @@
                     var response = JSON.parse(this.responseText);
                     var downloadButton = document.getElementById('download-button');
                     downloadButton.style.display = 'block';
+                    var pdfFilename = response.pdf_filename; // Get the PDF filename
                     downloadButton.onclick = function() {
-                        window.location.href = '/download_all?images=' + encodeURIComponent(response.images.join(','));
+                        window.location.href = '/download_all?images=' + encodeURIComponent(response.images.join(',')) + '&filename=' + encodeURIComponent(pdfFilename);
                         downloadButton.style.display = 'none'; // Hide download button after download
                     };
                 }
