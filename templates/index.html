@@ -39,6 +39,7 @@
             background-color: #ebedf7;
         }
         button {
+            display: none; /* Initially hide the button */
             background-color: #5a67d8;
             color: #fff;
             border: none;
@@ -67,17 +68,6 @@
             text-align: center;
             color: white;
             line-height: 20px;
-        }
-        #download-button {
-            display: none;
-            margin-top: 20px;
-            background-color: #5a67d8;
-            color: #fff;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
         }
     </style>
 </head>
@@ -116,6 +106,7 @@
                     downloadButton.style.display = 'block';
                     downloadButton.onclick = function() {
                         window.location.href = '/download_all?images=' + encodeURIComponent(response.images.join(','));
+                        downloadButton.style.display = 'none'; // Hide download button after download
                     };
                 }
             };
