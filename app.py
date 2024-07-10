@@ -35,7 +35,10 @@ def clear_folder(folder_path):
 @app.route('/')
 def index():
     return render_template('index.html')
+ALLOWED_EXTENSIONS = {'pdf'}
 
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
@@ -43,11 +46,14 @@ def upload_file():
         if 'file' not in request.files:
             logging.error('No file part in the request')
             return jsonify({'error': 'No file part'}), 400
+
         file = request.files['file']
+
         if file.filename == '':
             logging.error('No selected file')
             return jsonify({'error': 'No selected file'}), 400
-        if file:
+
+        if file and allowed_file(file.filename):
             clear_folder(UPLOAD_FOLDER)
             clear_folder(OUTPUT_FOLDER)
 
@@ -55,20 +61,24 @@ def upload_file():
             file.save(file_path)
             images = convert_from_path(file_path)
             image_files = []
+
             for i, image in enumerate(images):
                 image_filename = f'page_{i + 1}.jpg'
                 image_path = os.path.join(OUTPUT_FOLDER, image_filename)
                 image.save(image_path, 'JPEG')
                 image_files.append(image_filename)
 
-            # Store original filename for use in download filename
             original_filename = os.path.splitext(file.filename)[0]
 
             return jsonify({'images': image_files, 'original_filename': original_filename})
+
+        else:
+            logging.error('Invalid file type, only PDF files are allowed')
+            return jsonify({'error': 'Invalid file type, only PDF files are allowed'}), 400
+
     except Exception as e:
         logging.error(f'Error during file upload: {e}')
         return jsonify({'error': f'File upload failed: {str(e)}'}), 500
-
 
 @app.route('/download_all')
 def download_all():
