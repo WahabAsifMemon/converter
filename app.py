@@ -37,11 +37,11 @@ def home():
     return render_template('index.html')
 
 @app.route('/pdf-to-jpg')
-def pdf():
+def pdf_to_jpg():
     return render_template('pdf-to-jpg.html')
 
 @app.route('/pdf-to-word')
-def pdf():
+def pdf_to_word():
     return render_template('pdf-to-word.html')
 
 
