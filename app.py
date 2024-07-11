@@ -14,6 +14,7 @@ from werkzeug.utils import secure_filename
 import subprocess
 from pptx import Presentation
 from pptx.util import Inches
+import pdfkit
 
 app = Flask(__name__)
 UPLOAD_FOLDER = 'uploads'
@@ -65,9 +66,13 @@ def pdf_to_ppt():
 def pdf_to_pdfa():
     return render_template('pdf-to-pdfa.html')
 
+@app.route('/html-to-pdf')
+def html_to_pdf():
+    return render_template('html-to-pdf.html')
 
 
-ALLOWED_EXTENSIONS = {'pdf'}
+
+ALLOWED_EXTENSIONS = {'html', 'pdf'}
 ALLOWED_EXTENSIONS_DOCX = {'docx'}
 
 def allowed_file(filename, allowed_extensions):
@@ -276,6 +281,48 @@ def upload_pdf_to_ppt():
         logging.error(f'Error during file upload: {e}')
         return jsonify({'error': f'File upload failed: {str(e)}'}), 500
 
+if 'DYNO' in os.environ:  # Running on Heroku
+    config = pdfkit.configuration(wkhtmltopdf='/app/bin/wkhtmltopdf')
+else:
+    config = pdfkit.configuration()
+
+@app.route('/upload-html-to-pdf', methods=['POST'])
+def upload_html_to_pdf():
+    try:
+        if 'file' not in request.files:
+            logging.error('No file part in the request')
+            return jsonify({'error': 'No file part'}), 400
+
+        file = request.files['file']
+
+        if file.filename == '':
+            logging.error('No selected file')
+            return jsonify({'error': 'No selected file'}), 400
+
+        if file and allowed_file(file.filename, ALLOWED_EXTENSIONS):
+            clear_folder(UPLOAD_FOLDER)
+            clear_folder(OUTPUT_FOLDER)
+
+            file_path = os.path.join(UPLOAD_FOLDER, secure_filename(file.filename))
+            file.save(file_path)
+
+            if file_path.endswith('.html'):
+                pdf_file_path = os.path.join(OUTPUT_FOLDER, f"{os.path.splitext(file.filename)[0]}.pdf")
+
+                # Convert HTML to PDF using pdfkit
+                pdfkit.from_file(file_path, pdf_file_path, configuration=config)
+
+                return jsonify({'filename': f"{os.path.splitext(file.filename)[0]}.pdf"}), 200
+            elif file_path.endswith('.pdf'):
+                return jsonify({'filename': f"{os.path.splitext(file.filename)[0]}.pdf"}), 200
+
+        else:
+            logging.error('Invalid file type, only HTML or PDF files are allowed')
+            return jsonify({'error': 'Invalid file type, only HTML or PDF files are allowed'}), 400
+
+    except Exception as e:
+        logging.error(f'Error during file upload: {e}')
+        return jsonify({'error': f'File upload failed: {str(e)}'}), 500
 
 
 # CONVERTING PDF TO PDF/A
