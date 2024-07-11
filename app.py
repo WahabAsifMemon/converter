@@ -8,6 +8,7 @@ import datetime
 from pdf2docx import Converter
 import tabula
 import pandas as pd
+import fitz
 # from pptx import Presentation
 # from pptx.util import Inches
 # from pptx import Presentation
@@ -58,6 +59,11 @@ def pdf_to_excel():
 @app.route('/pdf-to-ppt')
 def pdf_to_ppt():
     return render_template('pdf-to-ppt.html')
+
+@app.route('/pdf-to-pdfa')
+def pdf_to_pdfa():
+    return render_template('pdf-to-pdfa.html')
+
 
 ALLOWED_EXTENSIONS = {'pdf'}
 
@@ -256,6 +262,48 @@ def upload_pdf_to_excel():
 #     except Exception as e:
 #         logging.error(f'Error during file upload: {e}')
 #         return jsonify({'error': f'File upload failed: {str(e)}'}), 500
+
+@app.route('/upload-pdf-to-pdfa', methods=['POST'])
+def upload_pdf_to_pdfa():
+    try:
+        if 'file' not in request.files:
+            logging.error('No file part in the request')
+            return jsonify({'error': 'No file part'}), 400
+
+        file = request.files['file']
+
+        if file.filename == '':
+            logging.error('No selected file')
+            return jsonify({'error': 'No selected file'}), 400
+
+        if file and allowed_file(file.filename):
+            clear_folder(UPLOAD_FOLDER)
+            clear_folder(OUTPUT_FOLDER)
+
+            file_path = os.path.join(UPLOAD_FOLDER, file.filename)
+            file.save(file_path)
+
+            # Convert PDF to PDF/A
+            pdfa_file_path = os.path.join(OUTPUT_FOLDER, f"{os.path.splitext(file.filename)[0]}_pdfa.pdf")
+            convert_to_pdfa(file_path, pdfa_file_path)
+
+            return jsonify({'filename': f"{os.path.splitext(file.filename)[0]}_pdfa.pdf"}), 200
+
+        else:
+            logging.error('Invalid file type, only PDF files are allowed')
+            return jsonify({'error': 'Invalid file type, only PDF files are allowed'}), 400
+
+    except Exception as e:
+        logging.error(f'Error during file upload: {e}')
+        return jsonify({'error': f'File upload failed: {str(e)}'}), 500
+
+def convert_to_pdfa(input_path, output_path):
+    # Using PyMuPDF to convert PDF to PDF/A
+    doc = fitz.open(input_path)
+    pdfa_bytes = doc.convert_to_pdfa(1, output_path.split(".pdf")[0], pdfa_version="A-1b")
+    with open(output_path, "wb") as f:
+        f.write(pdfa_bytes)
+
 
 @app.route('/download_all')
 def download_all():
