@@ -9,8 +9,6 @@ from pdf2docx import Converter
 import tabula
 import pandas as pd
 import fitz  # PyMuPDF library for PDF to PDF/A conversion
-from PIL import Image
-from docx2pdf import convert as docx2pdf_convert
 
 app = Flask(__name__)
 UPLOAD_FOLDER = 'uploads'
@@ -44,10 +42,6 @@ def home():
 def pdf_to_jpg():
     return render_template('pdf-to-jpg.html')
 
-@app.route('/jpg-to-pdf')
-def jpg_to_pdf():
-    return render_template('jpg-to-pdf.html')
-
 @app.route('/pdf-to-word')
 def pdf_to_word():
     return render_template('pdf-to-word.html')
@@ -64,16 +58,10 @@ def pdf_to_ppt():
 def pdf_to_pdfa():
     return render_template('pdf-to-pdfa.html')
 
-@app.route('/word-to-pdf')
-def word_to_pdf():
-    return render_template('word-to-pdf.html')
+ALLOWED_EXTENSIONS = {'pdf'}
 
-ALLOWED_EXTENSIONS_PDF = {'pdf'}
-ALLOWED_EXTENSIONS_JPG = {'jpg', 'jpeg'}
-ALLOWED_EXTENSIONS_DOCX = {'docx'}
-
-def allowed_file(filename, allowed_extensions):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_extensions
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
@@ -88,7 +76,7 @@ def upload_file():
             logging.error('No selected file')
             return jsonify({'error': 'No selected file'}), 400
 
-        if file and allowed_file(file.filename, ALLOWED_EXTENSIONS_PDF):
+        if file and allowed_file(file.filename):
             clear_folder(UPLOAD_FOLDER)
             clear_folder(OUTPUT_FOLDER)
 
@@ -128,7 +116,7 @@ def upload_pdf_to_word():
             logging.error('No selected file')
             return jsonify({'error': 'No selected file'}), 400
 
-        if file and allowed_file(file.filename, ALLOWED_EXTENSIONS_PDF):
+        if file and allowed_file(file.filename):
             clear_folder(UPLOAD_FOLDER)
             clear_folder(OUTPUT_FOLDER)
 
@@ -164,7 +152,7 @@ def upload_pdf_to_excel():
             logging.error('No selected file')
             return jsonify({'error': 'No selected file'}), 400
 
-        if file and allowed_file(file.filename, ALLOWED_EXTENSIONS_PDF):
+        if file and allowed_file(file.filename):
             clear_folder(UPLOAD_FOLDER)
             clear_folder(OUTPUT_FOLDER)
 
@@ -202,7 +190,7 @@ def upload_pdf_to_pdfa():
             logging.error('No selected file')
             return jsonify({'error': 'No selected file'}), 400
 
-        if file and allowed_file(file.filename, ALLOWED_EXTENSIONS_PDF):
+        if file and allowed_file(file.filename):
             clear_folder(UPLOAD_FOLDER)
             clear_folder(OUTPUT_FOLDER)
 
@@ -224,40 +212,7 @@ def upload_pdf_to_pdfa():
         return jsonify({'error': f'File upload failed: {str(e)}'}), 500
 
 @app.route('/upload-jpg-to-pdf', methods=['POST'])
-def upload_jpg_to_pdf():
-    try:
-        if 'files' not in request.files:
-            logging.error('No file part in the request')
-            return jsonify({'error': 'No file part'}), 400
-
-        files = request.files.getlist('files')
-
-        if not files:
-            logging.error('No selected files')
-            return jsonify({'error': 'No selected files'}), 400
-
-        image_list = []
-        for file in files:
-            if file and allowed_file(file.filename, ALLOWED_EXTENSIONS_JPG):
-                file_path = os.path.join(UPLOAD_FOLDER, file.filename)
-                file.save(file_path)
-                image = Image.open(file_path)
-                image_list.append(image)
-            else:
-                logging.error('Invalid file type, only JPG files are allowed')
-                return jsonify({'error': 'Invalid file type, only JPG files are allowed'}), 400
-
-        pdf_path = os.path.join(OUTPUT_FOLDER, 'converted.pdf')
-        image_list[0].save(pdf_path, save_all=True, append_images=image_list[1:])
-
-        return jsonify({'filename': 'converted.pdf'}), 200
-
-    except Exception as e:
-        logging.error(f'Error during file upload: {e}')
-        return jsonify({'error': f'File upload failed: {str(e)}'}), 500
-
-@app.route('/upload-word-to-pdf', methods=['POST'])
-def upload_word_to_pdf():
+def upload_jpg_to_pdfa():
     try:
         if 'file' not in request.files:
             logging.error('No file part in the request')
@@ -269,25 +224,27 @@ def upload_word_to_pdf():
             logging.error('No selected file')
             return jsonify({'error': 'No selected file'}), 400
 
-        if file and allowed_file(file.filename, ALLOWED_EXTENSIONS_DOCX):
+        if file and allowed_file(file.filename):
             clear_folder(UPLOAD_FOLDER)
             clear_folder(OUTPUT_FOLDER)
 
             file_path = os.path.join(UPLOAD_FOLDER, file.filename)
             file.save(file_path)
 
-            pdf_file_path = os.path.join(OUTPUT_FOLDER, f"{os.path.splitext(file.filename)[0]}.pdf")
-            docx2pdf_convert(file_path, pdf_file_path)
+            # Convert PDF to PDF/A
+            pdfa_file_path = os.path.join(OUTPUT_FOLDER, f"{os.path.splitext(file.filename)[0]}_pdfa.pdf")
+            convert_to_pdfa(file_path, pdfa_file_path)
 
-            return jsonify({'filename': f"{os.path.splitext(file.filename)[0]}.pdf"}), 200
+            return jsonify({'filename': f"{os.path.splitext(file.filename)[0]}_pdfa.pdf"}), 200
 
         else:
-            logging.error('Invalid file type, only DOCX files are allowed')
-            return jsonify({'error': 'Invalid file type, only DOCX files are allowed'}), 400
+            logging.error('Invalid file type, only PDF files are allowed')
+            return jsonify({'error': 'Invalid file type, only PDF files are allowed'}), 400
 
     except Exception as e:
         logging.error(f'Error during file upload: {e}')
         return jsonify({'error': f'File upload failed: {str(e)}'}), 500
+
 
 def convert_to_pdfa(input_path, output_path):
     # Using PyMuPDF to convert PDF to PDF/A
