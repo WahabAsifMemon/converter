@@ -12,7 +12,8 @@ import fitz  # PyMuPDF library for PDF to PDF/A conversion
 from docx2pdf import convert as docx2pdf_convert
 from werkzeug.utils import secure_filename
 import subprocess
-
+from pptx import Presentation
+from pptx.util import Inches
 
 app = Flask(__name__)
 UPLOAD_FOLDER = 'uploads'
@@ -230,6 +231,50 @@ def upload_pdf_to_pdfa():
         logging.error(f'Error during file upload: {e}')
         return jsonify({'error': f'File upload failed: {str(e)}'}), 500
 # END PDF TO PDF/A
+
+
+@app.route('/upload-pdf-to-ppt', methods=['POST'])
+def upload_pdf_to_ppt():
+    try:
+        if 'file' not in request.files:
+            logging.error('No file part in the request')
+            return jsonify({'error': 'No file part'}), 400
+
+        file = request.files['file']
+
+        if file.filename == '':
+            logging.error('No selected file')
+            return jsonify({'error': 'No selected file'}), 400
+
+        if file and allowed_file(file.filename, ALLOWED_EXTENSIONS):
+            clear_folder(UPLOAD_FOLDER)
+            clear_folder(OUTPUT_FOLDER)
+
+            file_path = os.path.join(UPLOAD_FOLDER, secure_filename(file.filename))
+            file.save(file_path)
+
+            # Convert PDF to images (one image per page)
+            images = convert_from_path(file_path, 300)  # 300 DPI for good quality
+
+            # Create a PowerPoint presentation
+            ppt_file_path = os.path.join(OUTPUT_FOLDER, f"{os.path.splitext(file.filename)[0]}.pptx")
+            prs = Presentation()
+
+            for i, image in enumerate(images):
+                slide = prs.slides.add_slide(prs.slide_layouts[5])  # Blank slide layout
+                slide.shapes.add_picture(io.BytesIO(image._repr_png_()), Inches(0), Inches(0), width=Inches(10))
+
+            prs.save(ppt_file_path)
+
+            return jsonify({'filename': f"{os.path.splitext(file.filename)[0]}.pptx"}), 200
+
+        else:
+            logging.error('Invalid file type, only PDF or PPTX files are allowed')
+            return jsonify({'error': 'Invalid file type, only PDF or PPTX files are allowed'}), 400
+
+    except Exception as e:
+        logging.error(f'Error during file upload: {e}')
+        return jsonify({'error': f'File upload failed: {str(e)}'}), 500
 
 
 
