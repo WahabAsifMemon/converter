@@ -174,6 +174,7 @@ def upload_pdf_to_excel():
         logging.error(f'Error during file upload: {e}')
         return jsonify({'error': f'File upload failed: {str(e)}'}), 500
 
+
 @app.route('/upload-pdf-to-ppt', methods=['POST'])
 def upload_pdf_to_ppt():
     try:
@@ -195,18 +196,32 @@ def upload_pdf_to_ppt():
             file.save(file_path)
 
             # Convert PDF to PowerPoint
-            prs = Presentation()
-            slide_layout = prs.slide_layouts[1]  # Choose a slide layout (e.g., Title Slide)
-
-            # Extract text from PDF pages and add to PowerPoint slides
-            pages = tabula.read_pdf(file_path, pages='all', multiple_tables=False)
-            for page in pages:
-                slide = prs.slides.add_slide(slide_layout)
-                text_box = slide.shapes.add_textbox(Inches(1), Inches(1), Inches(8), Inches(6))
-                tf = text_box.text_frame
-                tf.text = page
+            df_list = tabula.read_pdf(file_path, pages='all', multiple_tables=True)
+            # Adjust this part based on actual implementation
 
             pptx_file_path = os.path.join(OUTPUT_FOLDER, f"{os.path.splitext(file.filename)[0]}.pptx")
+
+            # Example conversion to PowerPoint - replace with your actual implementation
+            # This is just a placeholder and might not be accurate
+            # You need to implement conversion to PPTX here
+            # For example, using python-pptx library
+            from pptx import Presentation
+            from pptx.util import Inches
+
+            prs = Presentation()
+
+            for i, df in enumerate(df_list):
+                slide_layout = prs.slide_layouts[i % len(prs.slide_layouts)]
+                slide = prs.slides.add_slide(slide_layout)
+                shapes = slide.shapes
+
+                table_placeholder = slide.placeholders[1]
+                table = table_placeholder.table
+
+                # Assuming df is a pandas DataFrame
+                for row in df.itertuples(index=False):
+                    table.add_row().cells = [str(cell) for cell in row]
+
             prs.save(pptx_file_path)
 
             return jsonify({'filename': f"{os.path.splitext(file.filename)[0]}.pptx"}), 200
@@ -218,6 +233,7 @@ def upload_pdf_to_ppt():
     except Exception as e:
         logging.error(f'Error during file upload: {e}')
         return jsonify({'error': f'File upload failed: {str(e)}'}), 500
+
 
 @app.route('/download_all')
 def download_all():
