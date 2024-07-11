@@ -6,6 +6,8 @@ import zipfile
 import io
 import datetime
 from pdf2docx import Converter
+import tabula
+import pandas as pd
 
 app = Flask(__name__)
 UPLOAD_FOLDER = 'uploads'
@@ -42,6 +44,10 @@ def pdf_to_jpg():
 @app.route('/pdf-to-word')
 def pdf_to_word():
     return render_template('pdf-to-word.html')
+
+@app.route('/pdf-to-excel')
+def pdf_to_excel():
+    return render_template('pdf-to-excel.html')
 
 ALLOWED_EXTENSIONS = {'pdf'}
 
@@ -115,6 +121,44 @@ def upload_pdf_to_word():
             cv.close()
 
             return jsonify({'filename': f"{os.path.splitext(file.filename)[0]}.docx"}), 200
+
+        else:
+            logging.error('Invalid file type, only PDF files are allowed')
+            return jsonify({'error': 'Invalid file type, only PDF files are allowed'}), 400
+
+    except Exception as e:
+        logging.error(f'Error during file upload: {e}')
+        return jsonify({'error': f'File upload failed: {str(e)}'}), 500
+
+@app.route('/upload-pdf-to-excel', methods=['POST'])
+def upload_pdf_to_excel():
+    try:
+        if 'file' not in request.files:
+            logging.error('No file part in the request')
+            return jsonify({'error': 'No file part'}), 400
+
+        file = request.files['file']
+
+        if file.filename == '':
+            logging.error('No selected file')
+            return jsonify({'error': 'No selected file'}), 400
+
+        if file and allowed_file(file.filename):
+            clear_folder(UPLOAD_FOLDER)
+            clear_folder(OUTPUT_FOLDER)
+
+            file_path = os.path.join(UPLOAD_FOLDER, file.filename)
+            file.save(file_path)
+
+            # Convert PDF to Excel
+            df_list = tabula.read_pdf(file_path, pages='all', multiple_tables=True)
+            excel_file_path = os.path.join(OUTPUT_FOLDER, f"{os.path.splitext(file.filename)[0]}.xlsx")
+
+            with pd.ExcelWriter(excel_file_path) as writer:
+                for i, df in enumerate(df_list):
+                    df.to_excel(writer, sheet_name=f'Sheet{i+1}', index=False)
+
+            return jsonify({'filename': f"{os.path.splitext(file.filename)[0]}.xlsx"}), 200
 
         else:
             logging.error('Invalid file type, only PDF files are allowed')
