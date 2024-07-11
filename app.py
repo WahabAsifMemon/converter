@@ -33,7 +33,7 @@ def clear_folder(folder_path):
 
 
 @app.route('/')
-def index():
+def home():
     return render_template('index.html')
 
 @app.route('/pdf')
