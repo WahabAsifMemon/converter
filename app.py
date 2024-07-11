@@ -73,11 +73,10 @@ def html_to_pdf():
 
 
 ALLOWED_EXTENSIONS = {'pdf'}
-ALLOWED_EXTENSIONS_DOCX = {'docx'}
 
-def allowed_file(filename, allowed_extensions):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_extensions
 
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 # START PDF TO JPG
 @app.route('/upload', methods=['POST'])
