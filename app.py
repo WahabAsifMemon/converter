@@ -8,6 +8,8 @@ import datetime
 from pdf2docx import Converter
 import tabula
 import pandas as pd
+from pptx import Presentation
+from pptx.util import Inches
 
 app = Flask(__name__)
 UPLOAD_FOLDER = 'uploads'
@@ -48,6 +50,10 @@ def pdf_to_word():
 @app.route('/pdf-to-excel')
 def pdf_to_excel():
     return render_template('pdf-to-excel.html')
+
+@app.route('/pdf-to-ppt')
+def pdf_to_ppt():
+    return render_template('pdf-to-ppt.html')
 
 ALLOWED_EXTENSIONS = {'pdf'}
 
@@ -159,6 +165,51 @@ def upload_pdf_to_excel():
                     df.to_excel(writer, sheet_name=f'Sheet{i+1}', index=False)
 
             return jsonify({'filename': f"{os.path.splitext(file.filename)[0]}.xlsx"}), 200
+
+        else:
+            logging.error('Invalid file type, only PDF files are allowed')
+            return jsonify({'error': 'Invalid file type, only PDF files are allowed'}), 400
+
+    except Exception as e:
+        logging.error(f'Error during file upload: {e}')
+        return jsonify({'error': f'File upload failed: {str(e)}'}), 500
+
+@app.route('/upload-pdf-to-ppt', methods=['POST'])
+def upload_pdf_to_ppt():
+    try:
+        if 'file' not in request.files:
+            logging.error('No file part in the request')
+            return jsonify({'error': 'No file part'}), 400
+
+        file = request.files['file']
+
+        if file.filename == '':
+            logging.error('No selected file')
+            return jsonify({'error': 'No selected file'}), 400
+
+        if file and allowed_file(file.filename):
+            clear_folder(UPLOAD_FOLDER)
+            clear_folder(OUTPUT_FOLDER)
+
+            file_path = os.path.join(UPLOAD_FOLDER, file.filename)
+            file.save(file_path)
+
+            # Convert PDF to PowerPoint
+            prs = Presentation()
+            slide_layout = prs.slide_layouts[1]  # Choose a slide layout (e.g., Title Slide)
+
+            # Extract text from PDF pages and add to PowerPoint slides
+            pages = tabula.read_pdf(file_path, pages='all', multiple_tables=False)
+            for page in pages:
+                slide = prs.slides.add_slide(slide_layout)
+                text_box = slide.shapes.add_textbox(Inches(1), Inches(1), Inches(8), Inches(6))
+                tf = text_box.text_frame
+                tf.text = page
+
+            pptx_file_path = os.path.join(OUTPUT_FOLDER, f"{os.path.splitext(file.filename)[0]}.pptx")
+            prs.save(pptx_file_path)
+
+            return jsonify({'filename': f"{os.path.splitext(file.filename)[0]}.pptx"}), 200
 
         else:
             logging.error('Invalid file type, only PDF files are allowed')
