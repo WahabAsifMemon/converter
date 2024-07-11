@@ -17,7 +17,7 @@
             margin: 0;
         }
         h1 {
-            color: #d15309;
+            color: #d15c09;
         }
         form {
             background: #fff;
@@ -28,7 +28,7 @@
             text-align: center;
         }
         input[type="file"] {
-            border: 2px dashed #d15309;
+            border: 2px dashed #d15c09;
             padding: 20px;
             width: calc(100% - 40px);
             cursor: pointer;
@@ -40,7 +40,7 @@
             display: none;
         }
         button {
-            background-color: #d15309;
+            background-color: #d15c09;
             color: #fff;
             border: none;
             padding: 10px 20px;
@@ -51,7 +51,7 @@
             transition: background-color 0.3s ease;
         }
         button:hover {
-            background-color: #d15309;
+            background-color: #d15c09;
         }
         .progress {
             width: 300px;
@@ -64,7 +64,7 @@
         .progress-bar {
             width: 0;
             height: 20px;
-            background-color: #d15309;
+            background-color: #d15c09;
             text-align: center;
             color: white;
             line-height: 20px;
@@ -72,9 +72,9 @@
     </style>
 </head>
 <body>
-    <h1>PDF to PDF/A</h1>
-    <form id="upload-form" action="/upload-jpg-to-pdf" method="post" enctype="multipart/form-data">
-        <label for="file">Choose a PDF file:</label>
+    <h1>JPG to PDF</h1>
+    <form id="upload-form" action="/upload_jpg_to_pdf" method="post" enctype="multipart/form-data">
+        <label for="file">Choose a JPG file:</label>
         <input type="file" id="file" name="file" readonly accept=".jpg">
         <button type="submit">Convert</button>
     </form>
