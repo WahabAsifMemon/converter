@@ -7,6 +7,7 @@ import io
 import datetime
 
 app = Flask(__name__)
+view = Flask(__name__)
 UPLOAD_FOLDER = 'uploads'
 OUTPUT_FOLDER = 'output'
 
@@ -32,7 +33,7 @@ def clear_folder(folder_path):
             logging.error(f'Failed to delete {file_path}. Reason: {e}')
 
 
-@app.route('/')
+@view.route('/')
 def index():
     return render_template('index.html')
 
