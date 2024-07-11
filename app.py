@@ -5,16 +5,6 @@ from pdf2image import convert_from_path
 import zipfile
 import io
 import datetime
-from pdf2docx import Converter
-import tabula
-import pandas as pd
-import fitz
-# from pptx import Presentation
-# from pptx.util import Inches
-# from pptx import Presentation
-# from pptx.util import Inches, Pt
-# from pptx.enum.text import PP_ALIGN
-# from pptx.enum.table import WD_ALIGN_VERTICAL
 
 app = Flask(__name__)
 UPLOAD_FOLDER = 'uploads'
@@ -29,6 +19,7 @@ if not os.path.exists(OUTPUT_FOLDER):
 # Configure logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(message)s')
 
+
 def clear_folder(folder_path):
     for filename in os.listdir(folder_path):
         file_path = os.path.join(folder_path, filename)
@@ -40,31 +31,10 @@ def clear_folder(folder_path):
         except Exception as e:
             logging.error(f'Failed to delete {file_path}. Reason: {e}')
 
+
 @app.route('/')
-def home():
-    return render_template('index.html')
-
-@app.route('/pdf-to-jpg')
-def pdf_to_jpg():
+def index():
     return render_template('pdf-to-jpg.html')
-
-@app.route('/pdf-to-word')
-def pdf_to_word():
-    return render_template('pdf-to-word.html')
-
-@app.route('/pdf-to-excel')
-def pdf_to_excel():
-    return render_template('pdf-to-excel.html')
-
-@app.route('/pdf-to-ppt')
-def pdf_to_ppt():
-    return render_template('pdf-to-ppt.html')
-
-@app.route('/pdf-to-pdfa')
-def pdf_to_pdfa():
-    return render_template('pdf-to-pdfa.html')
-
-
 ALLOWED_EXTENSIONS = {'pdf'}
 
 def allowed_file(filename):
@@ -110,211 +80,16 @@ def upload_file():
         logging.error(f'Error during file upload: {e}')
         return jsonify({'error': f'File upload failed: {str(e)}'}), 500
 
-@app.route('/upload-pdf-to-word', methods=['POST'])
-def upload_pdf_to_word():
-    try:
-        if 'file' not in request.files:
-            logging.error('No file part in the request')
-            return jsonify({'error': 'No file part'}), 400
-
-        file = request.files['file']
-
-        if file.filename == '':
-            logging.error('No selected file')
-            return jsonify({'error': 'No selected file'}), 400
-
-        if file and allowed_file(file.filename):
-            clear_folder(UPLOAD_FOLDER)
-            clear_folder(OUTPUT_FOLDER)
-
-            file_path = os.path.join(UPLOAD_FOLDER, file.filename)
-            file.save(file_path)
-
-            # Convert PDF to Word
-            docx_file_path = os.path.join(OUTPUT_FOLDER, f"{os.path.splitext(file.filename)[0]}.docx")
-            cv = Converter(file_path)
-            cv.convert(docx_file_path)
-            cv.close()
-
-            return jsonify({'filename': f"{os.path.splitext(file.filename)[0]}.docx"}), 200
-
-        else:
-            logging.error('Invalid file type, only PDF files are allowed')
-            return jsonify({'error': 'Invalid file type, only PDF files are allowed'}), 400
-
-    except Exception as e:
-        logging.error(f'Error during file upload: {e}')
-        return jsonify({'error': f'File upload failed: {str(e)}'}), 500
-
-@app.route('/upload-pdf-to-excel', methods=['POST'])
-def upload_pdf_to_excel():
-    try:
-        if 'file' not in request.files:
-            logging.error('No file part in the request')
-            return jsonify({'error': 'No file part'}), 400
-
-        file = request.files['file']
-
-        if file.filename == '':
-            logging.error('No selected file')
-            return jsonify({'error': 'No selected file'}), 400
-
-        if file and allowed_file(file.filename):
-            clear_folder(UPLOAD_FOLDER)
-            clear_folder(OUTPUT_FOLDER)
-
-            file_path = os.path.join(UPLOAD_FOLDER, file.filename)
-            file.save(file_path)
-
-            # Convert PDF to Excel
-            df_list = tabula.read_pdf(file_path, pages='all', multiple_tables=True)
-            excel_file_path = os.path.join(OUTPUT_FOLDER, f"{os.path.splitext(file.filename)[0]}.xlsx")
-
-            with pd.ExcelWriter(excel_file_path) as writer:
-                for i, df in enumerate(df_list):
-                    df.to_excel(writer, sheet_name=f'Sheet{i+1}', index=False)
-
-            return jsonify({'filename': f"{os.path.splitext(file.filename)[0]}.xlsx"}), 200
-
-        else:
-            logging.error('Invalid file type, only PDF files are allowed')
-            return jsonify({'error': 'Invalid file type, only PDF files are allowed'}), 400
-
-    except Exception as e:
-        logging.error(f'Error during file upload: {e}')
-        return jsonify({'error': f'File upload failed: {str(e)}'}), 500
-
-
-# @app.route('/upload-pdf-to-ppt', methods=['POST'])
-# def upload_pdf_to_ppt():
-#     try:
-#         if 'file' not in request.files:
-#             logging.error('No file part in the request')
-#             return jsonify({'error': 'No file part'}), 400
-#
-#         file = request.files['file']
-#
-#         if file.filename == '':
-#             logging.error('No selected file')
-#             return jsonify({'error': 'No selected file'}), 400
-#
-#         if file and allowed_file(file.filename):
-#             clear_folder(UPLOAD_FOLDER)
-#             clear_folder(OUTPUT_FOLDER)
-#
-#             file_path = os.path.join(UPLOAD_FOLDER, file.filename)
-#             file.save(file_path)
-#
-#             # Convert PDF to PowerPoint
-#             df_list = tabula.read_pdf(file_path, pages='all', multiple_tables=True)
-#
-#             pptx_file_path = os.path.join(OUTPUT_FOLDER, f"{os.path.splitext(file.filename)[0]}.pptx")
-#
-#             # Initialize presentation object
-#             prs = Presentation()
-#
-#             # Loop through each DataFrame (assuming each DataFrame corresponds to a slide)
-#             for i, df in enumerate(df_list):
-#                 slide_layout = prs.slide_layouts[i % len(prs.slide_layouts)]
-#                 slide = prs.slides.add_slide(slide_layout)
-#
-#                 # Determine placeholder type to add a table
-#                 placeholder = slide.placeholders[1]  # Adjust index based on your specific layout
-#                 placeholder.text = f"Table {i + 1}"  # Set placeholder text
-#
-#                 # Calculate table dimensions and position
-#                 left = Inches(1)
-#                 top = Inches(1.5)
-#                 width = Inches(8)
-#                 height = Inches(5)
-#
-#                 # Add a table to the slide
-#                 rows = len(df) + 1  # Including header row
-#                 cols = len(df.columns)
-#                 table = placeholder.insert_table(rows=rows, cols=cols, left=left, top=top, width=width, height=height)
-#
-#                 # Set table properties
-#                 table.first_row = True  # Set first row as header
-#                 table.horz_banding = True  # Enable horizontal banding (alternating row colors)
-#
-#                 # Populate table with data
-#                 for row_idx, row in enumerate(df.itertuples(index=False)):
-#                     for col_idx, value in enumerate(row):
-#                         table.cell(row_idx + 1, col_idx).text = str(value)
-#
-#                         # Adjust text alignment if needed
-#                         cell = table.cell(row_idx + 1, col_idx)
-#                         for paragraph in cell.text_frame.paragraphs:
-#                             paragraph.alignment = PP_ALIGN.CENTER  # Adjust alignment as needed
-#                             for run in paragraph.runs:
-#                                 run.font.size = Pt(10)  # Adjust font size as needed
-#                                 run.font.color.rgb = RGBColor(0, 0, 0)  # Adjust font color as needed
-#
-#             # Save the PowerPoint presentation
-#             prs.save(pptx_file_path)
-#
-#             return jsonify({'filename': f"{os.path.splitext(file.filename)[0]}.pptx"}), 200
-#
-#         else:
-#             logging.error('Invalid file type, only PDF files are allowed')
-#             return jsonify({'error': 'Invalid file type, only PDF files are allowed'}), 400
-#
-#     except Exception as e:
-#         logging.error(f'Error during file upload: {e}')
-#         return jsonify({'error': f'File upload failed: {str(e)}'}), 500
-
-@app.route('/upload-pdf-to-pdfa', methods=['POST'])
-def upload_pdf_to_pdfa():
-    try:
-        if 'file' not in request.files:
-            logging.error('No file part in the request')
-            return jsonify({'error': 'No file part'}), 400
-
-        file = request.files['file']
-
-        if file.filename == '':
-            logging.error('No selected file')
-            return jsonify({'error': 'No selected file'}), 400
-
-        if file and allowed_file(file.filename):
-            clear_folder(UPLOAD_FOLDER)
-            clear_folder(OUTPUT_FOLDER)
-
-            file_path = os.path.join(UPLOAD_FOLDER, file.filename)
-            file.save(file_path)
-
-            # Convert PDF to PDF/A
-            pdfa_file_path = os.path.join(OUTPUT_FOLDER, f"{os.path.splitext(file.filename)[0]}_pdfa.pdf")
-            convert_to_pdfa(file_path, pdfa_file_path)
-
-            return jsonify({'filename': f"{os.path.splitext(file.filename)[0]}_pdfa.pdf"}), 200
-
-        else:
-            logging.error('Invalid file type, only PDF files are allowed')
-            return jsonify({'error': 'Invalid file type, only PDF files are allowed'}), 400
-
-    except Exception as e:
-        logging.error(f'Error during file upload: {e}')
-        return jsonify({'error': f'File upload failed: {str(e)}'}), 500
-
-def convert_to_pdfa(input_path, output_path):
-    # Using PyMuPDF to convert PDF to PDF/A
-    doc = fitz.open(input_path)
-    pdfa_bytes = doc.convert_to_pdfa(1, output_path.split(".pdf")[0], pdfa_version="A-1b")
-    with open(output_path, "wb") as f:
-        f.write(pdfa_bytes)
-
-
 @app.route('/download_all')
 def download_all():
     try:
-        files = request.args.get('files').split(',')
-        original_filename = request.args.get('filename', 'files')
+        image_files = request.args.get('images').split(',')
+        original_filename = request.args.get('filename', 'images')
 
         zip_buffer = io.BytesIO()
         with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-            for file in files:
-                zip_file.write(os.path.join(OUTPUT_FOLDER, file), file)
+            for image in image_files:
+                zip_file.write(os.path.join(OUTPUT_FOLDER, image), image)
         zip_buffer.seek(0)
 
         # Constructing the zip filename based on the original filename
@@ -326,14 +101,6 @@ def download_all():
         logging.error(f'Error during file download: {e}')
         return jsonify({'error': f'File download failed: {str(e)}'}), 500
 
-@app.route('/download')
-def download():
-    filename = request.args.get('filename')
-    if filename:
-        file_path = os.path.join(OUTPUT_FOLDER, filename)
-        return send_file(file_path, as_attachment=True)
-    else:
-        return jsonify({'error': 'Filename not provided'}), 400
 
 if __name__ == '__main__':
     app.run(debug=True)
