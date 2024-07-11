@@ -9,6 +9,7 @@ from pdf2docx import Converter
 import tabula
 import pandas as pd
 import fitz  # PyMuPDF library for PDF to PDF/A conversion
+from docx2pdf import convert as docx2pdf_convert
 
 app = Flask(__name__)
 UPLOAD_FOLDER = 'uploads'
@@ -60,7 +61,12 @@ def pdf_to_ppt():
 def pdf_to_pdfa():
     return render_template('pdf-to-pdfa.html')
 
+@app.route('/word-to-pdf')
+def word_to_pdf():
+    return render_template('word-to-pdf.html')
+
 ALLOWED_EXTENSIONS = {'pdf'}
+ALLOWED_EXTENSIONS_DOCX = {'docx'}
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -224,6 +230,41 @@ def upload_pdf_to_pdfa():
         return jsonify({'error': f'File upload failed: {str(e)}'}), 500
 # END PDF TO PDF/A
 
+# START WORD TO PDF
+@app.route('/upload-word-to-pdf', methods=['POST'])
+def upload_word_to_pdf():
+    try:
+        if 'file' not in request.files:
+            logging.error('No file part in the request')
+            return jsonify({'error': 'No file part'}), 400
+
+        file = request.files['file']
+
+        if file.filename == '':
+            logging.error('No selected file')
+            return jsonify({'error': 'No selected file'}), 400
+
+        if file and allowed_file(file.filename, ALLOWED_EXTENSIONS_DOCX):
+            clear_folder(UPLOAD_FOLDER)
+            clear_folder(OUTPUT_FOLDER)
+
+            file_path = os.path.join(UPLOAD_FOLDER, file.filename)
+            file.save(file_path)
+
+            pdf_file_path = os.path.join(OUTPUT_FOLDER, f"{os.path.splitext(file.filename)[0]}.pdf")
+            docx2pdf_convert(file_path, pdf_file_path)
+
+            return jsonify({'filename': f"{os.path.splitext(file.filename)[0]}.pdf"}), 200
+
+        else:
+            logging.error('Invalid file type, only DOCX files are allowed')
+            return jsonify({'error': 'Invalid file type, only DOCX files are allowed'}), 400
+
+    except Exception as e:
+        logging.error(f'Error during file upload: {e}')
+        return jsonify({'error': f'File upload failed: {str(e)}'}), 500
+# END WORD TO PDF
+
 # CONVERTING PDF TO PDF/A
 def convert_to_pdfa(input_path, output_path):
     # Using PyMuPDF to convert PDF to PDF/A
@@ -237,6 +278,8 @@ def convert_to_pdfa(input_path, output_path):
         logging.error(f'Error converting to PDF/A: {e}')
         raise
 # CONVERTING PDF TO PDF/A
+
+
 
 @app.route('/download_all')
 def download_all():
