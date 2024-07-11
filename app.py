@@ -171,13 +171,13 @@ def upload_pdf_to_excel():
 @app.route('/download_all')
 def download_all():
     try:
-        image_files = request.args.get('images').split(',')
-        original_filename = request.args.get('filename', 'images')
+        files = request.args.get('files').split(',')
+        original_filename = request.args.get('filename', 'files')
 
         zip_buffer = io.BytesIO()
         with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-            for image in image_files:
-                zip_file.write(os.path.join(OUTPUT_FOLDER, image), image)
+            for file in files:
+                zip_file.write(os.path.join(OUTPUT_FOLDER, file), file)
         zip_buffer.seek(0)
 
         # Constructing the zip filename based on the original filename
@@ -197,7 +197,6 @@ def download():
         return send_file(file_path, as_attachment=True)
     else:
         return jsonify({'error': 'Filename not provided'}), 400
-
 
 if __name__ == '__main__':
     app.run(debug=True)
