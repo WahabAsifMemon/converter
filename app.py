@@ -34,7 +34,13 @@ def clear_folder(folder_path):
 
 @app.route('/')
 def index():
+    return render_template('index.html')
+
+@app.route('/pdf')
+def pdf():
     return render_template('pdf-jpg.html')
+
+
 ALLOWED_EXTENSIONS = {'pdf'}
 
 def allowed_file(filename):
