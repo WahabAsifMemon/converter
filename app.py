@@ -10,6 +10,7 @@ import tabula
 import pandas as pd
 import fitz  # PyMuPDF library for PDF to PDF/A conversion
 from PIL import Image
+from fpdf import FPDF  # For creating PDF from images
 
 app = Flask(__name__)
 UPLOAD_FOLDER = 'uploads'
@@ -59,11 +60,7 @@ def pdf_to_ppt():
 def pdf_to_pdfa():
     return render_template('pdf-to-pdfa.html')
 
-@app.route('/jpg-to-pdf')
-def jpg_to_pdf():
-    return render_template('jpg-to-pdf.html')
-
-ALLOWED_EXTENSIONS = {'pdf', 'jpg', 'jpeg'}
+ALLOWED_EXTENSIONS = {'pdf'}
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -87,31 +84,22 @@ def upload_file():
 
             file_path = os.path.join(UPLOAD_FOLDER, file.filename)
             file.save(file_path)
+            images = convert_from_path(file_path)
+            image_files = []
 
-            if file.filename.lower().endswith('.pdf'):
-                images = convert_from_path(file_path)
-                image_files = []
+            for i, image in enumerate(images):
+                image_filename = f'page_{i + 1}.jpg'
+                image_path = os.path.join(OUTPUT_FOLDER, image_filename)
+                image.save(image_path, 'JPEG')
+                image_files.append(image_filename)
 
-                for i, image in enumerate(images):
-                    image_filename = f'page_{i + 1}.jpg'
-                    image_path = os.path.join(OUTPUT_FOLDER, image_filename)
-                    image.save(image_path, 'JPEG')
-                    image_files.append(image_filename)
+            original_filename = os.path.splitext(file.filename)[0]
 
-                original_filename = os.path.splitext(file.filename)[0]
-
-                return jsonify({'images': image_files, 'original_filename': original_filename})
-
-            elif file.filename.lower().endswith('.jpg') or file.filename.lower().endswith('.jpeg'):
-                pdf_filename = f'{os.path.splitext(file.filename)[0]}.pdf'
-                pdf_path = os.path.join(OUTPUT_FOLDER, pdf_filename)
-                convert_jpg_to_pdf(file_path, pdf_path)
-
-                return jsonify({'filename': pdf_filename}), 200
+            return jsonify({'images': image_files, 'original_filename': original_filename})
 
         else:
-            logging.error('Invalid file type, only PDF or JPG/JPEG files are allowed')
-            return jsonify({'error': 'Invalid file type, only PDF or JPG/JPEG files are allowed'}), 400
+            logging.error('Invalid file type, only PDF files are allowed')
+            return jsonify({'error': 'Invalid file type, only PDF files are allowed'}), 400
 
     except Exception as e:
         logging.error(f'Error during file upload: {e}')
@@ -237,11 +225,66 @@ def convert_to_pdfa(input_path, output_path):
         logging.error(f'Error converting to PDF/A: {e}')
         raise
 
+
+@app.route('/upload_jpg', methods=['POST'])
+def upload_jpg_file():
+    try:
+        if 'file' not in request.files:
+            logging.error('No file part in the request')
+            return jsonify({'error': 'No file part'}), 400
+
+        file = request.files['file']
+
+        if file.filename == '':
+            logging.error('No selected file')
+            return jsonify({'error': 'No selected file'}), 400
+
+        if file and allowed_file(file.filename):
+            clear_folder(UPLOAD_FOLDER)
+            clear_folder(OUTPUT_FOLDER)
+
+            file_path = os.path.join(UPLOAD_FOLDER, file.filename)
+            file.save(file_path)
+
+            if file.filename.lower().endswith('.pdf'):
+                # Convert PDF to JPG
+                images = convert_from_path(file_path)
+                image_files = []
+
+                for i, image in enumerate(images):
+                    image_filename = f'page_{i + 1}.jpg'
+                    image_path = os.path.join(OUTPUT_FOLDER, image_filename)
+                    image.save(image_path, 'JPEG')
+                    image_files.append(image_filename)
+
+                original_filename = os.path.splitext(file.filename)[0]
+
+                return jsonify({'images': image_files, 'original_filename': original_filename})
+
+            elif file.filename.lower().endswith('.jpg') or file.filename.lower().endswith('.jpeg'):
+                # Convert JPG to PDF
+                pdf_filename = f'{os.path.splitext(file.filename)[0]}.pdf'
+                pdf_path = os.path.join(OUTPUT_FOLDER, pdf_filename)
+                convert_jpg_to_pdf(file_path, pdf_path)
+
+                return jsonify({'filename': pdf_filename}), 200
+
+        else:
+            logging.error('Invalid file type, only PDF or JPG/JPEG files are allowed')
+            return jsonify({'error': 'Invalid file type, only PDF or JPG/JPEG files are allowed'}), 400
+
+    except Exception as e:
+        logging.error(f'Error during file upload: {e}')
+        return jsonify({'error': f'File upload failed: {str(e)}'}), 500
+
 def convert_jpg_to_pdf(input_path, output_path):
     # Using PIL to convert JPG to PDF
     try:
         img = Image.open(input_path)
-        img.save(output_path, 'PDF', resolution=100.0, save_all=True)
+        pdf = FPDF()
+        pdf.add_page()
+        pdf.image(img, 0, 0, 210, 297)  # A4 size
+        pdf.output(output_path)
     except Exception as e:
         logging.error(f'Error converting JPG to PDF: {e}')
         raise
