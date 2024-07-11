@@ -72,49 +72,49 @@
     </style>
 </head>
 <body>
-    <h1>HTML to PDF</h1>
-    <form id="upload-form" action="/upload-html-to-pdf" method="post" enctype="multipart/form-data">
-        <label for="file">Choose a HTML file:</label>
-        <input type="file" id="file" name="file" readonly accept=".html">
-        <button type="submit">Convert</button>
-    </form>
+    <h1>COMING SOON HTML to PDF</h1>
+<!--    <form id="upload-form" action="/upload-html-to-pdf" method="post" enctype="multipart/form-data">-->
+<!--        <label for="file">Choose a HTML file:</label>-->
+<!--        <input type="file" id="file" name="file" readonly accept=".html">-->
+<!--        <button type="submit">Convert</button>-->
+<!--    </form>-->
     <div class="progress">
         <div class="progress-bar" id="progress-bar">0%</div>
     </div>
     <button id="download-button">Download PDF Document</button>
-    <script>
-        document.getElementById('upload-form').onsubmit = function(event) {
-            event.preventDefault();
-            var formData = new FormData(this);
-            var xhr = new XMLHttpRequest();
-            xhr.open('POST', '/upload-html-to-pdf', true);
+<!--    <script>-->
+<!--        document.getElementById('upload-form').onsubmit = function(event) {-->
+<!--            event.preventDefault();-->
+<!--            var formData = new FormData(this);-->
+<!--            var xhr = new XMLHttpRequest();-->
+<!--            xhr.open('POST', '/upload-html-to-pdf', true);-->
 
-            xhr.upload.onprogress = function(e) {
-                if (e.lengthComputable) {
-                    var percentComplete = (e.loaded / e.total) * 100;
-                    var progressBar = document.getElementById('progress-bar');
-                    progressBar.style.width = percentComplete + '%';
-                    progressBar.textContent = Math.round(percentComplete) + '%';
-                    document.querySelector('.progress').style.display = 'block';
-                }
-            };
+<!--            xhr.upload.onprogress = function(e) {-->
+<!--                if (e.lengthComputable) {-->
+<!--                    var percentComplete = (e.loaded / e.total) * 100;-->
+<!--                    var progressBar = document.getElementById('progress-bar');-->
+<!--                    progressBar.style.width = percentComplete + '%';-->
+<!--                    progressBar.textContent = Math.round(percentComplete) + '%';-->
+<!--                    document.querySelector('.progress').style.display = 'block';-->
+<!--                }-->
+<!--            };-->
 
-            xhr.onload = function() {
-                if (this.status == 200) {
-                    var response = JSON.parse(this.responseText);
-                    var downloadButton = document.getElementById('download-button');
-                    downloadButton.style.display = 'block';
-                    downloadButton.onclick = function() {
-                        window.location.href = '/download?filename=' + encodeURIComponent(response.filename);
-                        downloadButton.style.display = 'none';
-                    };
-                } else {
-                    alert('Error: ' + this.statusText);
-                }
-            };
+<!--            xhr.onload = function() {-->
+<!--                if (this.status == 200) {-->
+<!--                    var response = JSON.parse(this.responseText);-->
+<!--                    var downloadButton = document.getElementById('download-button');-->
+<!--                    downloadButton.style.display = 'block';-->
+<!--                    downloadButton.onclick = function() {-->
+<!--                        window.location.href = '/download?filename=' + encodeURIComponent(response.filename);-->
+<!--                        downloadButton.style.display = 'none';-->
+<!--                    };-->
+<!--                } else {-->
+<!--                    alert('Error: ' + this.statusText);-->
+<!--                }-->
+<!--            };-->
 
-            xhr.send(formData);
-        };
-    </script>
+<!--            xhr.send(formData);-->
+<!--        };-->
+<!--    </script>-->
 </body>
 </html>
