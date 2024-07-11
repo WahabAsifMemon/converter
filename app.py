@@ -11,6 +11,7 @@ import pandas as pd
 import fitz  # PyMuPDF library for PDF to PDF/A conversion
 from docx2pdf import convert as docx2pdf_convert
 from werkzeug.utils import secure_filename
+import subprocess
 
 
 app = Flask(__name__)
@@ -63,9 +64,41 @@ def pdf_to_ppt():
 def pdf_to_pdfa():
     return render_template('pdf-to-pdfa.html')
 
-@app.route('/word-to-pdf')
-def word_to_pdf():
-    return render_template('word-to-pdf.html')
+@app.route('/upload-word-to-pdf', methods=['POST'])
+def upload_word_to_pdf():
+    try:
+        if 'file' not in request.files:
+            logging.error('No file part in the request')
+            return jsonify({'error': 'No file part'}), 400
+
+        file = request.files['file']
+
+        if file.filename == '':
+            logging.error('No selected file')
+            return jsonify({'error': 'No selected file'}), 400
+
+        if file and allowed_file(file.filename, ALLOWED_EXTENSIONS_DOCX):
+            clear_folder(UPLOAD_FOLDER)
+            clear_folder(OUTPUT_FOLDER)
+
+            file_path = os.path.join(UPLOAD_FOLDER, secure_filename(file.filename))
+            file.save(file_path)
+
+            pdf_file_path = os.path.join(OUTPUT_FOLDER, f"{os.path.splitext(file.filename)[0]}.pdf")
+
+            # Convert using LibreOffice
+            cmd = f'libreoffice --headless --convert-to pdf --outdir {OUTPUT_FOLDER} {file_path}'
+            subprocess.run(cmd, shell=True, check=True)
+
+            return jsonify({'filename': f"{os.path.splitext(file.filename)[0]}.pdf"}), 200
+
+        else:
+            logging.error('Invalid file type, only DOCX files are allowed')
+            return jsonify({'error': 'Invalid file type, only DOCX files are allowed'}), 400
+
+    except Exception as e:
+        logging.error(f'Error during file upload: {e}')
+        return jsonify({'error': f'File upload failed: {str(e)}'}), 500
 
 ALLOWED_EXTENSIONS = {'pdf'}
 ALLOWED_EXTENSIONS_DOCX = {'docx'}
