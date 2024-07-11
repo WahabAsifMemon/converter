@@ -8,12 +8,12 @@ import datetime
 from pdf2docx import Converter
 import tabula
 import pandas as pd
-from pptx import Presentation
-from pptx.util import Inches
-from pptx import Presentation
-from pptx.util import Inches, Pt
-from pptx.enum.text import PP_ALIGN
-from pptx.enum.table import WD_ALIGN_VERTICAL
+# from pptx import Presentation
+# from pptx.util import Inches
+# from pptx import Presentation
+# from pptx.util import Inches, Pt
+# from pptx.enum.text import PP_ALIGN
+# from pptx.enum.table import WD_ALIGN_VERTICAL
 
 app = Flask(__name__)
 UPLOAD_FOLDER = 'uploads'
