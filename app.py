@@ -5,6 +5,7 @@ from pdf2image import convert_from_path
 import zipfile
 import io
 import datetime
+from pdf2docx import Converter
 
 app = Flask(__name__)
 UPLOAD_FOLDER = 'uploads'
@@ -19,7 +20,6 @@ if not os.path.exists(OUTPUT_FOLDER):
 # Configure logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(message)s')
 
-
 def clear_folder(folder_path):
     for filename in os.listdir(folder_path):
         file_path = os.path.join(folder_path, filename)
@@ -30,7 +30,6 @@ def clear_folder(folder_path):
                 os.rmdir(file_path)
         except Exception as e:
             logging.error(f'Failed to delete {file_path}. Reason: {e}')
-
 
 @app.route('/')
 def home():
@@ -43,7 +42,6 @@ def pdf_to_jpg():
 @app.route('/pdf-to-word')
 def pdf_to_word():
     return render_template('pdf-to-word.html')
-
 
 ALLOWED_EXTENSIONS = {'pdf'}
 
@@ -90,6 +88,42 @@ def upload_file():
         logging.error(f'Error during file upload: {e}')
         return jsonify({'error': f'File upload failed: {str(e)}'}), 500
 
+@app.route('/upload-pdf-to-word', methods=['POST'])
+def upload_pdf_to_word():
+    try:
+        if 'file' not in request.files:
+            logging.error('No file part in the request')
+            return jsonify({'error': 'No file part'}), 400
+
+        file = request.files['file']
+
+        if file.filename == '':
+            logging.error('No selected file')
+            return jsonify({'error': 'No selected file'}), 400
+
+        if file and allowed_file(file.filename):
+            clear_folder(UPLOAD_FOLDER)
+            clear_folder(OUTPUT_FOLDER)
+
+            file_path = os.path.join(UPLOAD_FOLDER, file.filename)
+            file.save(file_path)
+
+            # Convert PDF to Word
+            docx_file_path = os.path.join(OUTPUT_FOLDER, f"{os.path.splitext(file.filename)[0]}.docx")
+            cv = Converter(file_path)
+            cv.convert(docx_file_path)
+            cv.close()
+
+            return send_file(docx_file_path, mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document', as_attachment=True, download_name=f"{os.path.splitext(file.filename)[0]}.docx")
+
+        else:
+            logging.error('Invalid file type, only PDF files are allowed')
+            return jsonify({'error': 'Invalid file type, only PDF files are allowed'}), 400
+
+    except Exception as e:
+        logging.error(f'Error during file upload: {e}')
+        return jsonify({'error': f'File upload failed: {str(e)}'}), 500
+
 @app.route('/download_all')
 def download_all():
     try:
@@ -110,6 +144,15 @@ def download_all():
     except Exception as e:
         logging.error(f'Error during file download: {e}')
         return jsonify({'error': f'File download failed: {str(e)}'}), 500
+
+@app.route('/download')
+def download():
+    filename = request.args.get('filename')
+    if filename:
+        file_path = os.path.join(OUTPUT_FOLDER, filename)
+        return send_file(file_path, as_attachment=True)
+    else:
+        return jsonify({'error': 'Filename not provided'}), 400
 
 
 if __name__ == '__main__':
