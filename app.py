@@ -5,6 +5,10 @@ from pdf2image import convert_from_path
 import zipfile
 import io
 import datetime
+from pdf2docx import Converter
+import tabula
+import pandas as pd
+import fitz  # PyMuPDF library for PDF to PDF/A conversion
 
 app = Flask(__name__)
 UPLOAD_FOLDER = 'uploads'
@@ -33,13 +37,36 @@ def clear_folder(folder_path):
 
 
 @app.route('/')
-def index():
+def home():
+    return render_template('index.html')
+
+@app.route('/pdf-to-jpg')
+def pdf_to_jpg():
     return render_template('pdf-to-jpg.html')
+
+@app.route('/pdf-to-word')
+def pdf_to_word():
+    return render_template('pdf-to-word.html')
+
+@app.route('/pdf-to-excel')
+def pdf_to_excel():
+    return render_template('pdf-to-excel.html')
+
+@app.route('/pdf-to-ppt')
+def pdf_to_ppt():
+    return render_template('pdf-to-ppt.html')
+
+@app.route('/pdf-to-pdfa')
+def pdf_to_pdfa():
+    return render_template('pdf-to-pdfa.html')
+
 ALLOWED_EXTENSIONS = {'pdf'}
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+
+# START PDF TO JPG
 @app.route('/upload', methods=['POST'])
 def upload_file():
     try:
@@ -79,6 +106,137 @@ def upload_file():
     except Exception as e:
         logging.error(f'Error during file upload: {e}')
         return jsonify({'error': f'File upload failed: {str(e)}'}), 500
+# END PDF TO JPG
+
+# START PDF TO WORD
+@app.route('/upload-pdf-to-word', methods=['POST'])
+def upload_pdf_to_word():
+    try:
+        if 'file' not in request.files:
+            logging.error('No file part in the request')
+            return jsonify({'error': 'No file part'}), 400
+
+        file = request.files['file']
+
+        if file.filename == '':
+            logging.error('No selected file')
+            return jsonify({'error': 'No selected file'}), 400
+
+        if file and allowed_file(file.filename):
+            clear_folder(UPLOAD_FOLDER)
+            clear_folder(OUTPUT_FOLDER)
+
+            file_path = os.path.join(UPLOAD_FOLDER, file.filename)
+            file.save(file_path)
+
+            # Convert PDF to Word
+            docx_file_path = os.path.join(OUTPUT_FOLDER, f"{os.path.splitext(file.filename)[0]}.docx")
+            cv = Converter(file_path)
+            cv.convert(docx_file_path)
+            cv.close()
+
+            return jsonify({'filename': f"{os.path.splitext(file.filename)[0]}.docx"}), 200
+
+        else:
+            logging.error('Invalid file type, only PDF files are allowed')
+            return jsonify({'error': 'Invalid file type, only PDF files are allowed'}), 400
+
+    except Exception as e:
+        logging.error(f'Error during file upload: {e}')
+        return jsonify({'error': f'File upload failed: {str(e)}'}), 500
+# END PDF TO WORD
+
+
+# START PDF TO EXCEL
+@app.route('/upload-pdf-to-excel', methods=['POST'])
+def upload_pdf_to_excel():
+    try:
+        if 'file' not in request.files:
+            logging.error('No file part in the request')
+            return jsonify({'error': 'No file part'}), 400
+
+        file = request.files['file']
+
+        if file.filename == '':
+            logging.error('No selected file')
+            return jsonify({'error': 'No selected file'}), 400
+
+        if file and allowed_file(file.filename):
+            clear_folder(UPLOAD_FOLDER)
+            clear_folder(OUTPUT_FOLDER)
+
+            file_path = os.path.join(UPLOAD_FOLDER, file.filename)
+            file.save(file_path)
+
+            # Convert PDF to Excel
+            df_list = tabula.read_pdf(file_path, pages='all', multiple_tables=True)
+            excel_file_path = os.path.join(OUTPUT_FOLDER, f"{os.path.splitext(file.filename)[0]}.xlsx")
+
+            with pd.ExcelWriter(excel_file_path) as writer:
+                for i, df in enumerate(df_list):
+                    df.to_excel(writer, sheet_name=f'Sheet{i+1}', index=False)
+
+            return jsonify({'filename': f"{os.path.splitext(file.filename)[0]}.xlsx"}), 200
+
+        else:
+            logging.error('Invalid file type, only PDF files are allowed')
+            return jsonify({'error': 'Invalid file type, only PDF files are allowed'}), 400
+
+    except Exception as e:
+        logging.error(f'Error during file upload: {e}')
+        return jsonify({'error': f'File upload failed: {str(e)}'}), 500
+# END PDF TO EXCEL
+
+
+# START PDF TO PDF/A
+@app.route('/upload-pdf-to-pdfa', methods=['POST'])
+def upload_pdf_to_pdfa():
+    try:
+        if 'file' not in request.files:
+            logging.error('No file part in the request')
+            return jsonify({'error': 'No file part'}), 400
+
+        file = request.files['file']
+
+        if file.filename == '':
+            logging.error('No selected file')
+            return jsonify({'error': 'No selected file'}), 400
+
+        if file and allowed_file(file.filename):
+            clear_folder(UPLOAD_FOLDER)
+            clear_folder(OUTPUT_FOLDER)
+
+            file_path = os.path.join(UPLOAD_FOLDER, file.filename)
+            file.save(file_path)
+
+            # Convert PDF to PDF/A
+            pdfa_file_path = os.path.join(OUTPUT_FOLDER, f"{os.path.splitext(file.filename)[0]}_pdfa.pdf")
+            convert_to_pdfa(file_path, pdfa_file_path)
+
+            return jsonify({'filename': f"{os.path.splitext(file.filename)[0]}_pdfa.pdf"}), 200
+
+        else:
+            logging.error('Invalid file type, only PDF files are allowed')
+            return jsonify({'error': 'Invalid file type, only PDF files are allowed'}), 400
+
+    except Exception as e:
+        logging.error(f'Error during file upload: {e}')
+        return jsonify({'error': f'File upload failed: {str(e)}'}), 500
+# END PDF TO PDF/A
+
+# CONVERTING PDF TO PDF/A
+def convert_to_pdfa(input_path, output_path):
+    # Using PyMuPDF to convert PDF to PDF/A
+    try:
+        doc = fitz.open(input_path)
+        doc_pdf = fitz.open()
+        doc_pdf.insert_pdf(doc)
+        doc_pdf.save(output_path)
+        doc_pdf.close()
+    except Exception as e:
+        logging.error(f'Error converting to PDF/A: {e}')
+        raise
+# CONVERTING PDF TO PDF/A
 
 @app.route('/download_all')
 def download_all():
@@ -101,6 +259,14 @@ def download_all():
         logging.error(f'Error during file download: {e}')
         return jsonify({'error': f'File download failed: {str(e)}'}), 500
 
+@app.route('/download')
+def download():
+    filename = request.args.get('filename')
+    if filename:
+        file_path = os.path.join(OUTPUT_FOLDER, filename)
+        return send_file(file_path, as_attachment=True)
+    else:
+        return jsonify({'error': 'Filename not provided'}), 400
 
 if __name__ == '__main__':
     app.run(debug=True)
