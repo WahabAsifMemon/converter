@@ -38,7 +38,7 @@ def home():
 
 @app.route('/pdf')
 def pdf():
-    return render_template('pdf-jpg.html')
+    return render_template('pdf-to-jpg.html')
 
 
 ALLOWED_EXTENSIONS = {'pdf'}
