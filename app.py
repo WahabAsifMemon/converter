@@ -10,7 +10,6 @@ import tabula
 import pandas as pd
 import fitz  # PyMuPDF library for PDF to PDF/A conversion
 from PIL import Image
-from fpdf import FPDF  # For creating PDF from images
 
 app = Flask(__name__)
 UPLOAD_FOLDER = 'uploads'
@@ -24,6 +23,7 @@ if not os.path.exists(OUTPUT_FOLDER):
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(message)s')
+ALLOWED_EXTENSIONS_JPG = {'jpg', 'jpeg'}
 
 def clear_folder(folder_path):
     for filename in os.listdir(folder_path):
@@ -43,6 +43,12 @@ def home():
 @app.route('/pdf-to-jpg')
 def pdf_to_jpg():
     return render_template('pdf-to-jpg.html')
+
+
+@app.route('/jpg-to-pdf')
+def jpg_to_pdf():
+    return render_template('jpg-to-pdf.html')
+
 
 @app.route('/pdf-to-word')
 def pdf_to_word():
@@ -213,21 +219,8 @@ def upload_pdf_to_pdfa():
         logging.error(f'Error during file upload: {e}')
         return jsonify({'error': f'File upload failed: {str(e)}'}), 500
 
-def convert_to_pdfa(input_path, output_path):
-    # Using PyMuPDF to convert PDF to PDF/A
-    try:
-        doc = fitz.open(input_path)
-        doc_pdf = fitz.open()
-        doc_pdf.insert_pdf(doc)
-        doc_pdf.save(output_path)
-        doc_pdf.close()
-    except Exception as e:
-        logging.error(f'Error converting to PDF/A: {e}')
-        raise
-
-
-@app.route('/upload_jpg', methods=['POST'])
-def upload_jpg_file():
+@app.route('/upload-jpg-to-pdf', methods=['POST'])
+def upload_jpg_to_pdf():
     try:
         if 'file' not in request.files:
             logging.error('No file part in the request')
@@ -246,48 +239,86 @@ def upload_jpg_file():
             file_path = os.path.join(UPLOAD_FOLDER, file.filename)
             file.save(file_path)
 
-            if file.filename.lower().endswith('.pdf'):
-                # Convert PDF to JPG
-                images = convert_from_path(file_path)
-                image_files = []
+            # Convert PDF to PDF/A
+            pdfa_file_path = os.path.join(OUTPUT_FOLDER, f"{os.path.splitext(file.filename)[0]}_pdfa.pdf")
+            convert_to_pdfa(file_path, pdfa_file_path)
 
-                for i, image in enumerate(images):
-                    image_filename = f'page_{i + 1}.jpg'
-                    image_path = os.path.join(OUTPUT_FOLDER, image_filename)
-                    image.save(image_path, 'JPEG')
-                    image_files.append(image_filename)
-
-                original_filename = os.path.splitext(file.filename)[0]
-
-                return jsonify({'images': image_files, 'original_filename': original_filename})
-
-            elif file.filename.lower().endswith('.jpg') or file.filename.lower().endswith('.jpeg'):
-                # Convert JPG to PDF
-                pdf_filename = f'{os.path.splitext(file.filename)[0]}.pdf'
-                pdf_path = os.path.join(OUTPUT_FOLDER, pdf_filename)
-                convert_jpg_to_pdf(file_path, pdf_path)
-
-                return jsonify({'filename': pdf_filename}), 200
+            return jsonify({'filename': f"{os.path.splitext(file.filename)[0]}_pdfa.pdf"}), 200
 
         else:
-            logging.error('Invalid file type, only PDF or JPG/JPEG files are allowed')
-            return jsonify({'error': 'Invalid file type, only PDF or JPG/JPEG files are allowed'}), 400
+            logging.error('Invalid file type, only PDF files are allowed')
+            return jsonify({'error': 'Invalid file type, only PDF files are allowed'}), 400
 
     except Exception as e:
         logging.error(f'Error during file upload: {e}')
         return jsonify({'error': f'File upload failed: {str(e)}'}), 500
 
-def convert_jpg_to_pdf(input_path, output_path):
-    # Using PIL to convert JPG to PDF
+
+def convert_to_pdfa(input_path, output_path):
+    # Using PyMuPDF to convert PDF to PDF/A
     try:
-        img = Image.open(input_path)
-        pdf = FPDF()
-        pdf.add_page()
-        pdf.image(img, 0, 0, 210, 297)  # A4 size
-        pdf.output(output_path)
+        doc = fitz.open(input_path)
+        doc_pdf = fitz.open()
+        doc_pdf.insert_pdf(doc)
+        doc_pdf.save(output_path)
+        doc_pdf.close()
     except Exception as e:
-        logging.error(f'Error converting JPG to PDF: {e}')
+        logging.error(f'Error converting to PDF/A: {e}')
         raise
+
+
+@app.route('/upload-jpg-to-pdf', methods=['POST'])
+def upload_jpg_to_pdf():
+    try:
+        if 'files' not in request.files:
+            logging.error('No file part in the request')
+            return jsonify({'error': 'No file part'}), 400
+
+        files = request.files.getlist('files')
+
+        if not files:
+            logging.error('No selected files')
+            return jsonify({'error': 'No selected files'}), 400
+
+        image_list = []
+        for file in files:
+            if file and allowed_file(file.filename, ALLOWED_EXTENSIONS_JPG):
+                file_path = os.path.join(UPLOAD_FOLDER, file.filename)
+                file.save(file_path)
+                image = Image.open(file_path)
+                image_list.append(image.convert('RGB'))
+            else:
+                logging.error('Invalid file type, only JPG files are allowed')
+                return jsonify({'error': 'Invalid file type, only JPG files are allowed'}), 400
+
+        if not image_list:
+            logging.error('No valid JPG files uploaded')
+            return jsonify({'error': 'No valid JPG files uploaded'}), 400
+
+        clear_folder(OUTPUT_FOLDER)
+
+        # Save images to a single PDF file
+        pdf_path = os.path.join(OUTPUT_FOLDER, 'converted.pdf')
+        image_list[0].save(pdf_path, save_all=True, append_images=image_list[1:])
+
+        return jsonify({'filename': 'converted.pdf'}), 200
+
+    except Exception as e:
+        logging.error(f'Error during file upload: {e}')
+        return jsonify({'error': f'File upload failed: {str(e)}'}), 500
+
+def convert_to_pdfa(input_path, output_path):
+    # Using PyMuPDF to convert PDF to PDF/A
+    try:
+        doc = fitz.open(input_path)
+        doc_pdf = fitz.open()
+        doc_pdf.insert_pdf(doc)
+        doc_pdf.save(output_path)
+        doc_pdf.close()
+    except Exception as e:
+        logging.error(f'Error converting to PDF/A: {e}')
+        raise
+
 
 @app.route('/download_all')
 def download_all():
