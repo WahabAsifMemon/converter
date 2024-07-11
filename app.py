@@ -64,6 +64,10 @@ def pdf_to_ppt():
 def pdf_to_pdfa():
     return render_template('pdf-to-pdfa.html')
 
+@app.route('/word-to-pdf')
+def pdf_to_pdfa():
+    return render_template('word-to-pdf.html')
+
 # @app.route('/upload-word-to-pdf', methods=['POST'])
 # def upload_word_to_pdf():
 #     try:
@@ -206,16 +210,11 @@ def upload_pdf_to_excel():
             clear_folder(UPLOAD_FOLDER)
             clear_folder(OUTPUT_FOLDER)
 
-            file_path = os.path.join(UPLOAD_FOLDER, secure_filename(file.filename))
+            file_path = os.path.join(UPLOAD_FOLDER, file.filename)
             file.save(file_path)
 
             # Convert PDF to Excel
-            df_list = tabula.read_pdf(file_path, pages='all', multiple_tables=True, stream=True)
-
-            if not df_list:
-                logging.error('No tables found in the PDF')
-                return jsonify({'error': 'No tables found in the PDF'}), 400
-
+            df_list = tabula.read_pdf(file_path, pages='all', multiple_tables=True)
             excel_file_path = os.path.join(OUTPUT_FOLDER, f"{os.path.splitext(file.filename)[0]}.xlsx")
 
             with pd.ExcelWriter(excel_file_path) as writer:
@@ -292,7 +291,10 @@ def upload_word_to_pdf():
             file.save(file_path)
 
             pdf_file_path = os.path.join(OUTPUT_FOLDER, f"{os.path.splitext(file.filename)[0]}.pdf")
-            docx2pdf_convert(file_path, pdf_file_path)
+
+            # Convert using LibreOffice
+            cmd = f'libreoffice --headless --convert-to pdf --outdir {OUTPUT_FOLDER} {file_path}'
+            subprocess.run(cmd, shell=True, check=True)
 
             return jsonify({'filename': f"{os.path.splitext(file.filename)[0]}.pdf"}), 200
 
