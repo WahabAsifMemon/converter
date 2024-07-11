@@ -10,6 +10,8 @@ import tabula
 import pandas as pd
 import fitz  # PyMuPDF library for PDF to PDF/A conversion
 from docx2pdf import convert as docx2pdf_convert
+from werkzeug.utils import secure_filename
+
 
 app = Flask(__name__)
 UPLOAD_FOLDER = 'uploads'
@@ -68,8 +70,8 @@ def word_to_pdf():
 ALLOWED_EXTENSIONS = {'pdf'}
 ALLOWED_EXTENSIONS_DOCX = {'docx'}
 
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+def allowed_file(filename, allowed_extensions):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_extensions
 
 
 # START PDF TO JPG
@@ -248,7 +250,7 @@ def upload_word_to_pdf():
             clear_folder(UPLOAD_FOLDER)
             clear_folder(OUTPUT_FOLDER)
 
-            file_path = os.path.join(UPLOAD_FOLDER, file.filename)
+            file_path = os.path.join(UPLOAD_FOLDER, secure_filename(file.filename))
             file.save(file_path)
 
             pdf_file_path = os.path.join(OUTPUT_FOLDER, f"{os.path.splitext(file.filename)[0]}.pdf")
