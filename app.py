@@ -114,7 +114,7 @@ def upload_pdf_to_word():
             cv.convert(docx_file_path)
             cv.close()
 
-            return send_file(docx_file_path, mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document', as_attachment=True, download_name=f"{os.path.splitext(file.filename)[0]}.docx")
+            return jsonify({'filename': f"{os.path.splitext(file.filename)[0]}.docx"}), 200
 
         else:
             logging.error('Invalid file type, only PDF files are allowed')
