@@ -73,9 +73,12 @@ def html_to_pdf():
 
 
 ALLOWED_EXTENSIONS = {'pdf'}
+ALLOWED_EXTENSIONS_DOCX = {'docx'}
 
+def allowed_file(filename, allowed_extensions):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_extensions
 
-def allowed_file(filename):
+def pdf_allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 # START PDF TO JPG
@@ -92,7 +95,7 @@ def upload_file():
             logging.error('No selected file')
             return jsonify({'error': 'No selected file'}), 400
 
-        if file and allowed_file(file.filename):
+        if file and pdf_allowed_file(file.filename):
             clear_folder(UPLOAD_FOLDER)
             clear_folder(OUTPUT_FOLDER)
 
