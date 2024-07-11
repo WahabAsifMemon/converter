@@ -66,6 +66,11 @@ def pdf_to_pdfa():
     return render_template('pdf-to-pdfa.html')
 
 
+@app.route('/html-to-pdf')
+def html_to_pdf():
+    return render_template('html-to-pdf.html')
+
+
 
 ALLOWED_EXTENSIONS = {'pdf'}
 ALLOWED_EXTENSIONS_DOCX = {'docx'}
