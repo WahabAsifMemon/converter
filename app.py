@@ -206,11 +206,16 @@ def upload_pdf_to_excel():
             clear_folder(UPLOAD_FOLDER)
             clear_folder(OUTPUT_FOLDER)
 
-            file_path = os.path.join(UPLOAD_FOLDER, file.filename)
+            file_path = os.path.join(UPLOAD_FOLDER, secure_filename(file.filename))
             file.save(file_path)
 
             # Convert PDF to Excel
-            df_list = tabula.read_pdf(file_path, pages='all', multiple_tables=True)
+            df_list = tabula.read_pdf(file_path, pages='all', multiple_tables=True, stream=True)
+
+            if not df_list:
+                logging.error('No tables found in the PDF')
+                return jsonify({'error': 'No tables found in the PDF'}), 400
+
             excel_file_path = os.path.join(OUTPUT_FOLDER, f"{os.path.splitext(file.filename)[0]}.xlsx")
 
             with pd.ExcelWriter(excel_file_path) as writer:
