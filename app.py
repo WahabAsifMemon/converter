@@ -56,7 +56,7 @@ def pdf_to_ppt():
 
 @app.route('/pdf-to-pdfa')
 def pdf_to_pdfa():
-    return render_template('pdf-to-pdfA.html')
+    return render_template('pdf-to-pdfa.html')
 
 ALLOWED_EXTENSIONS = {'pdf'}
 
