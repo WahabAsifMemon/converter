@@ -14,7 +14,6 @@ from werkzeug.utils import secure_filename
 import subprocess
 from pptx import Presentation
 from pptx.util import Inches
-import pdfkit
 
 app = Flask(__name__)
 UPLOAD_FOLDER = 'uploads'
@@ -66,13 +65,9 @@ def pdf_to_ppt():
 def pdf_to_pdfa():
     return render_template('pdf-to-pdfa.html')
 
-@app.route('/html-to-pdf')
-def html_to_pdf():
-    return render_template('html-to-pdf.html')
 
 
-
-ALLOWED_EXTENSIONS = {'html', 'pdf'}
+ALLOWED_EXTENSIONS = {'pdf'}
 ALLOWED_EXTENSIONS_DOCX = {'docx'}
 
 def allowed_file(filename, allowed_extensions):
@@ -280,12 +275,6 @@ def upload_pdf_to_ppt():
     except Exception as e:
         logging.error(f'Error during file upload: {e}')
         return jsonify({'error': f'File upload failed: {str(e)}'}), 500
-
-if 'DYNO' in os.environ:  # Running on Heroku
-    config = pdfkit.configuration(wkhtmltopdf='/app/bin/wkhtmltopdf')
-else:
-    config = pdfkit.configuration()
-
 
 
 
