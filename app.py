@@ -283,7 +283,7 @@ def upload_word_to_pdf():
             logging.error('No selected file')
             return jsonify({'error': 'No selected file'}), 400
 
-        if file and allowed_file(file.filename, ALLOWED_EXTENSIONS_DOCX):
+        if file and allowed_file(file.filename, {'docx'}):
             clear_folder(UPLOAD_FOLDER)
             clear_folder(OUTPUT_FOLDER)
 
@@ -305,6 +305,7 @@ def upload_word_to_pdf():
     except Exception as e:
         logging.error(f'Error during file upload: {e}')
         return jsonify({'error': f'File upload failed: {str(e)}'}), 500
+
 # END WORD TO PDF
 
 # CONVERTING PDF TO PDF/A
