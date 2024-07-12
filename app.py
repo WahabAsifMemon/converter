@@ -74,7 +74,7 @@ def html_to_pdf():
 
 @app.route('/ppt-to-pdf')
 def ppt_to_pdf():
-    return render_template('ppt-to-pdf')
+    return render_template('ppt-to-pdf.html')
 
 
 
