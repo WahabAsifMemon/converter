@@ -82,6 +82,14 @@ def ppt_to_pdf():
 def excel_to_pdf():
     return render_template('excel-to-pdf.html')
 
+@app.route('/jpg-to-pdf')
+def jpg_to_pdf():
+    return render_template('jpg-to-pdf.html')
+
+@app.route('/word-to-pdf')
+def word_to_pdf():
+    return render_template('word-to-pdf.html')
+
 
 ALLOWED_EXTENSIONS = {'pdf'}
 ALLOWED_EXTENSIONS_DOCX = {'docx'}
