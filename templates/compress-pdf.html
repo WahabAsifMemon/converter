@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Merge PDF</title>
+    <title>Compress PDF</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -72,22 +72,22 @@
     </style>
 </head>
 <body>
-    <h1>Merge PDF</h1>
-    <form id="upload-form" action="/upload-and-merge" method="post" enctype="multipart/form-data">
-        <label for="file">Choose PDF files to merge (at least 2):</label>
-        <input type="file" id="file" name="file"  accept=".pdf" multiple>
-        <button type="submit">Convert</button>
+    <h1>Compress PDF</h1>
+    <form id="upload-form" action="/upload-and-compress" method="post" enctype="multipart/form-data">
+        <label for="file">Choose a PDF file to compress:</label>
+        <input type="file" id="file" name="file" accept=".pdf">
+        <button type="submit">Compress</button>
     </form>
     <div class="progress">
         <div class="progress-bar" id="progress-bar">0%</div>
     </div>
-    <button id="download-button">Download Merge PDF File</button>
+    <button id="download-button">Download Compressed PDF File</button>
     <script>
         document.getElementById('upload-form').onsubmit = function(event) {
             event.preventDefault();
             var formData = new FormData(this);
             var xhr = new XMLHttpRequest();
-            xhr.open('POST', '/upload-and-merge', true);
+            xhr.open('POST', '/upload-and-compress', true);
 
             xhr.upload.onprogress = function(e) {
                 if (e.lengthComputable) {

@@ -16,7 +16,7 @@ from pptx import Presentation
 from pptx.util import Inches
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
-from PyPDF2 import PdfMerger, PdfReader
+from PyPDF2 import PdfMerger, PdfReader, PdfFileWriter, PdfFileReader
 
 app = Flask(__name__)
 UPLOAD_FOLDER = 'uploads'
@@ -94,6 +94,10 @@ def word_to_pdf():
 @app.route('/merge-pdf')
 def merge_pdf():
     return render_template('merge-pdf.html')
+
+@app.route('/compress-pdf')
+def compress_pdf():
+    return render_template('compress-pdf.html')
 
 ALLOWED_EXTENSIONS = {'pdf'}
 ALLOWED_EXTENSIONS_DOCX = {'docx'}
@@ -459,6 +463,47 @@ def merge_pdfs(input_paths, output_path):
     merger.write(output_path)
     merger.close()
 
+
+@app.route('/upload-and-compress', methods=['POST'])
+def upload_and_compress():
+    try:
+        uploaded_file = request.files['file']
+
+        if not uploaded_file:
+            return jsonify({'error': 'No file uploaded'}), 400
+
+        if not allowed_file(uploaded_file.filename, {'pdf'}):
+            return jsonify({'error': 'Invalid file type. Please upload a PDF file'}), 400
+
+        clear_folder(UPLOAD_FOLDER)
+        clear_folder(OUTPUT_FOLDER)
+
+        filename = secure_filename(uploaded_file.filename)
+        file_path = os.path.join(UPLOAD_FOLDER, filename)
+        uploaded_file.save(file_path)
+
+        compressed_pdf_path = os.path.join(OUTPUT_FOLDER, 'compressed_file.pdf')
+
+        # Compress PDF
+        compress_pdf(file_path, compressed_pdf_path)
+
+        return jsonify({'filename': 'compressed_file.pdf'}), 200
+
+    except Exception as e:
+        logging.error(f'Error during file upload and compression: {e}')
+        return jsonify({'error': f'File upload and compression failed: {str(e)}'}), 500
+
+def compress_pdf(input_path, output_path):
+    with open(input_path, 'rb') as input_file:
+        pdf_reader = PdfFileReader(input_file)
+        pdf_writer = PdfFileWriter()
+
+        for page_num in range(pdf_reader.getNumPages()):
+            page = pdf_reader.getPage(page_num)
+            pdf_writer.addPage(page)
+
+        with open(output_path, 'wb') as output_file:
+            pdf_writer.write(output_file)
 
 # CONVERTING PDF TO PDF/A
 def convert_to_pdfa(input_path, output_path):
