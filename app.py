@@ -16,7 +16,7 @@ from pptx import Presentation
 from pptx.util import Inches
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
-from PyPDF2 import PdfFileMerger
+from PyPDF2 import PdfFileReader, PdfMerger
 
 app = Flask(__name__)
 UPLOAD_FOLDER = 'uploads'
@@ -441,7 +441,7 @@ def upload_and_merge():
 
         merged_pdf_path = os.path.join(OUTPUT_FOLDER, 'merged_file.pdf')
 
-        # Merge PDF files
+        # Merge PDF files using PdfMerger
         merge_pdfs(file_paths, merged_pdf_path)
 
         return send_file(merged_pdf_path, as_attachment=True)
@@ -451,10 +451,10 @@ def upload_and_merge():
         return jsonify({'error': f'File upload and merge failed: {str(e)}'}), 500
 
 def merge_pdfs(input_paths, output_path):
-    merger = PdfFileMerger()
+    merger = PdfMerger()
 
     for path in input_paths:
-        merger.append(path)
+        merger.append(PdfFileReader(open(path, 'rb')))
 
     merger.write(output_path)
     merger.close()
