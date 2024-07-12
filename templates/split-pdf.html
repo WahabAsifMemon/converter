@@ -73,14 +73,15 @@
             var xhr = new XMLHttpRequest();
             xhr.open('POST', '/upload-and-split', true);
 
+
             xhr.onload = function() {
                 if (this.status == 200) {
                     var response = JSON.parse(this.responseText);
-                    var downloadZipButton = document.getElementById('download-zip-button');
-                    downloadZipButton.style.display = 'block';
-                    downloadZipButton.onclick = function() {
-                        window.location.href = '/download?filename=' + encodeURIComponent(response.zip_file);
-                        downloadZipButton.style.display = 'none';
+                    var downloadButton = document.getElementById('download-button');
+                    downloadButton.style.display = 'block';
+                    downloadButton.onclick = function() {
+                        window.location.href = '/download?filename=' + encodeURIComponent(response.filename);
+                        downloadButton.style.display = 'none';
                     };
                 } else {
                     alert('Error: ' + this.statusText);
