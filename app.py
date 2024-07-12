@@ -444,7 +444,7 @@ def upload_and_merge():
         # Merge PDF files using PdfMerger and PdfReader
         merge_pdfs(file_paths, merged_pdf_path)
 
-        return send_file(merged_pdf_path, as_attachment=True)
+        return jsonify({'filename': 'merged_file.pdf'}), 200
 
     except Exception as e:
         logging.error(f'Error during file upload and merge: {e}')
@@ -458,6 +458,7 @@ def merge_pdfs(input_paths, output_path):
 
     merger.write(output_path)
     merger.close()
+
 
 # CONVERTING PDF TO PDF/A
 def convert_to_pdfa(input_path, output_path):
