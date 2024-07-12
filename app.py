@@ -582,40 +582,7 @@ def convert_to_pdfa(input_path, output_path):
 # START JPG TO PDF
 @app.route('/upload-jpg-to-pdf', methods=['POST'])
 def upload_jpg_to_pdf():
-    try:
-        if 'file' not in request.files:
-            logging.error('No file part in the request')
-            return jsonify({'error': 'No file part'}), 400
-
-        files = request.files.getlist('file')
-
-        if len(files) == 0:
-            logging.error('No selected files')
-            return jsonify({'error': 'No selected files'}), 400
-
-        for file in files:
-            if not allowed_file(file.filename, ALLOWED_EXTENSIONS_IMG):
-                logging.error('Invalid file type, only JPG, JPEG, and PNG files are allowed')
-                return jsonify({'error': 'Invalid file type, only JPG, JPEG, and PNG files are allowed'}), 400
-
-        clear_folder(UPLOAD_FOLDER)
-        clear_folder(OUTPUT_FOLDER)
-
-        image_files = []
-        for file in files:
-            file_path = os.path.join(UPLOAD_FOLDER, file.filename)
-            file.save(file_path)
-            image_files.append(file_path)
-
-        output_pdf_path = os.path.join(OUTPUT_FOLDER, f"{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf")
-        images = [Image.open(image_file).convert('RGB') for image_file in image_files]
-        images[0].save(output_pdf_path, save_all=True, append_images=images[1:])
-
-        return jsonify({'filename': os.path.basename(output_pdf_path)}), 200
-
-    except Exception as e:
-        logging.error(f'Error during JPG to PDF conversion: {e}')
-        return jsonify({'error': f'JPG to PDF conversion failed: {str(e)}'}), 500
+   print('Wanag')
 # END JPG TO PDF
 
 
