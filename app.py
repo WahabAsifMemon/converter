@@ -16,7 +16,7 @@ from pptx import Presentation
 from pptx.util import Inches
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
-from PyPDF2 import PdfMerger, PdfReader, PdfFileWriter, PdfFileReader
+from PyPDF2 import PdfMerger, PdfReader, PdfWriter
 
 app = Flask(__name__)
 UPLOAD_FOLDER = 'uploads'
@@ -495,12 +495,11 @@ def upload_and_compress():
 
 def compress_pdf(input_path, output_path):
     with open(input_path, 'rb') as input_file:
-        pdf_reader = PdfFileReader(input_file)
-        pdf_writer = PdfFileWriter()
+        pdf_reader = PdfReader(input_file)
+        pdf_writer = PdfWriter()
 
-        for page_num in range(pdf_reader.getNumPages()):
-            page = pdf_reader.getPage(page_num)
-            pdf_writer.addPage(page)
+        for page_num in range(len(pdf_reader.pages)):
+            pdf_writer.add_page(pdf_reader.pages[page_num])
 
         with open(output_path, 'wb') as output_file:
             pdf_writer.write(output_file)
