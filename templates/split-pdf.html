@@ -75,18 +75,19 @@
 
 
             xhr.onload = function() {
-                if (this.status == 200) {
-                    var response = JSON.parse(this.responseText);
-                    var downloadButton = document.getElementById('download-zip-button');
-                    downloadButton.style.display = 'block';
-                    downloadButton.onclick = function() {
-                        window.location.href = '/download?filename=' + encodeURIComponent(response.filename);
-                        downloadButton.style.display = 'none';
-                    };
-                } else {
-                    alert('Error: ' + this.statusText);
-                }
-            };
+            if (this.status == 200) {
+                var response = JSON.parse(this.responseText);
+                var downloadButton = document.getElementById('download-zip-button');
+                downloadButton.style.display = 'block';
+                downloadButton.onclick = function() {
+                    window.location.href = '/download?filename=' + encodeURIComponent(response.zip_file);
+                    downloadButton.style.display = 'none';
+                };
+            } else {
+                alert('Error: ' + this.statusText);
+            }
+        };
+
 
             xhr.send(formData);
         };
