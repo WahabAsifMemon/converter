@@ -72,9 +72,9 @@ def html_to_pdf():
 
 
 
-@app.route('/ppt-to-pdf.html')
+@app.route('/ppt-to-pdf')
 def ppt_to_pdf():
-    return render_template('ppt-to-pdf.html')
+    return render_template('ppt-to-pdf')
 
 
 
@@ -305,7 +305,7 @@ def upload_ppt_to_pdf():
             logging.error('No selected file')
             return jsonify({'error': 'No selected file'}), 400
 
-        if file and allowed_file(file.filename, ALLOWED_EXTENSIONS_PPTX):
+        if file and allowed_file(file.filename, {'ppt', 'pptx'}):
             clear_folder(UPLOAD_FOLDER)
             clear_folder(OUTPUT_FOLDER)
 
@@ -321,12 +321,16 @@ def upload_ppt_to_pdf():
             return jsonify({'filename': f"{os.path.splitext(file.filename)[0]}.pdf"}), 200
 
         else:
-            logging.error('Invalid file type, only PPTX files are allowed')
-            return jsonify({'error': 'Invalid file type, only PPTX files are allowed'}), 400
+            logging.error('Invalid file type, only PPT or PPTX files are allowed')
+            return jsonify({'error': 'Invalid file type, only PPT or PPTX files are allowed'}), 400
 
+    except subprocess.CalledProcessError as e:
+        logging.error(f'LibreOffice conversion error: {e}')
+        return jsonify({'error': f'File upload failed: {str(e)}'}), 500
     except Exception as e:
         logging.error(f'Error during file upload: {e}')
         return jsonify({'error': f'File upload failed: {str(e)}'}), 500
+
 
 
 
