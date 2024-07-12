@@ -100,8 +100,10 @@ ALLOWED_EXTENSIONS_DOCX = {'docx'}
 ALLOWED_EXTENSIONS_PPTX = {'pptx'}
 
 
+
 def allowed_file(filename, allowed_extensions):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_extensions
+
 
 def pdf_allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -428,7 +430,7 @@ def upload_and_merge():
 
         file_paths = []
         for file in uploaded_files:
-            if file and allowed_file(file.filename):
+            if file and allowed_file(file.filename, {'pdf'}):
                 filename = secure_filename(file.filename)
                 file_path = os.path.join(UPLOAD_FOLDER, filename)
                 file.save(file_path)
