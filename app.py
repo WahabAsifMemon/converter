@@ -546,12 +546,12 @@ def upload_and_split():
 
 def split_pdf(input_path, output_folder):
     with open(input_path, 'rb') as input_file:
-        pdf_reader = PdfFileReader(input_file)
-        num_pages = pdf_reader.numPages
+        pdf_reader = PdfReader(input_file)
+        num_pages = len(pdf_reader.pages)
 
         for page_num in range(num_pages):
-            pdf_writer = PdfFileWriter()
-            pdf_writer.addPage(pdf_reader.getPage(page_num))
+            pdf_writer = PdfWriter()
+            pdf_writer.add_page(pdf_reader.pages[page_num])
 
             output_path = os.path.join(output_folder, f'page_{page_num + 1}.pdf')
 
