@@ -60,7 +60,7 @@
 </head>
 <body>
     <h1>Convert JPG to PDF</h1>
-    <form id="upload-form" action="/upload-jpg-and-convert'" method="post" enctype="multipart/form-data">
+    <form id="upload-form" action="/upload-jpg-to-pdf'" method="post" enctype="multipart/form-data">
         <label for="file">Choose JPG files to convert:</label>
         <input type="file" id="file" name="file[]" accept=".jpg, .jpeg" multiple>
         <button type="submit">Convert to PDF</button>
@@ -71,7 +71,7 @@
             event.preventDefault();
             var formData = new FormData(this);
             var xhr = new XMLHttpRequest();
-            xhr.open('POST', '/upload-jpg-and-convert', true);
+            xhr.open('POST', '/upload-jpg-to-pdf', true);
 
             xhr.onload = function() {
                 if (this.status == 200) {
