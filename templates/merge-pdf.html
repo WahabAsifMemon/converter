@@ -74,8 +74,8 @@
 <body>
     <h1>Merge PDF </h1>
     <form id="upload-form" action="/upload-and-merge" method="post" enctype="multipart/form-data">
-        <label for="file">Choose a PDF file:</label>
-        <input type="file" id="file" name="file" >
+        <label for="file">Choose PDF files to merge (at least 2):</label>
+        <input type="file" id="file" name="file"  accept=".pdf" multiple>
         <button type="submit">Convert</button>
     </form>
     <div class="progress">
