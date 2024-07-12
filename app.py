@@ -72,8 +72,16 @@ def html_to_pdf():
 
 
 
+@app.route('/ppt-to-pdf.html')
+def ppt_to_pdf():
+    return render_template('ppt-to-pdf.html')
+
+
+
 ALLOWED_EXTENSIONS = {'pdf'}
 ALLOWED_EXTENSIONS_DOCX = {'docx'}
+ALLOWED_EXTENSIONS_PPTX = {'pptx'}
+
 
 def allowed_file(filename, allowed_extensions):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_extensions
@@ -278,6 +286,43 @@ def upload_pdf_to_ppt():
         else:
             logging.error('Invalid file type, only PDF or PPTX files are allowed')
             return jsonify({'error': 'Invalid file type, only PDF or PPTX files are allowed'}), 400
+
+    except Exception as e:
+        logging.error(f'Error during file upload: {e}')
+        return jsonify({'error': f'File upload failed: {str(e)}'}), 500
+
+
+@app.route('/upload-ppt-to-pdf', methods=['POST'])
+def upload_ppt_to_pdf():
+    try:
+        if 'file' not in request.files:
+            logging.error('No file part in the request')
+            return jsonify({'error': 'No file part'}), 400
+
+        file = request.files['file']
+
+        if file.filename == '':
+            logging.error('No selected file')
+            return jsonify({'error': 'No selected file'}), 400
+
+        if file and allowed_file(file.filename, ALLOWED_EXTENSIONS_PPTX):
+            clear_folder(UPLOAD_FOLDER)
+            clear_folder(OUTPUT_FOLDER)
+
+            file_path = os.path.join(UPLOAD_FOLDER, secure_filename(file.filename))
+            file.save(file_path)
+
+            pdf_file_path = os.path.join(OUTPUT_FOLDER, f"{os.path.splitext(file.filename)[0]}.pdf")
+
+            # Convert using LibreOffice
+            cmd = f'libreoffice --headless --convert-to pdf --outdir {OUTPUT_FOLDER} {file_path}'
+            subprocess.run(cmd, shell=True, check=True)
+
+            return jsonify({'filename': f"{os.path.splitext(file.filename)[0]}.pdf"}), 200
+
+        else:
+            logging.error('Invalid file type, only PPTX files are allowed')
+            return jsonify({'error': 'Invalid file type, only PPTX files are allowed'}), 400
 
     except Exception as e:
         logging.error(f'Error during file upload: {e}')
