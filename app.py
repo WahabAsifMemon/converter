@@ -76,6 +76,9 @@ def html_to_pdf():
 def ppt_to_pdf():
     return render_template('ppt-to-pdf.html')
 
+@app.route('/excel-to-pdf')
+def excel_to_pdf():
+    return render_template('excel-to-pdf.html')
 
 
 ALLOWED_EXTENSIONS = {'pdf'}
@@ -332,6 +335,70 @@ def upload_ppt_to_pdf():
         return jsonify({'error': f'File upload failed: {str(e)}'}), 500
 
 
+@app.route('/upload-excel-to-pdf', methods=['POST'])
+def upload_excel_to_pdf():
+    try:
+        if 'file' not in request.files:
+            logging.error('No file part in the request')
+            return jsonify({'error': 'No file part'}), 400
+
+        file = request.files['file']
+
+        if file.filename == '':
+            logging.error('No selected file')
+            return jsonify({'error': 'No selected file'}), 400
+
+        if file and allowed_file(file.filename, {'xlsx', 'xls'}):
+            clear_folder(UPLOAD_FOLDER)
+            clear_folder(OUTPUT_FOLDER)
+
+            file_path = os.path.join(UPLOAD_FOLDER, secure_filename(file.filename))
+            file.save(file_path)
+
+            pdf_file_path = os.path.join(OUTPUT_FOLDER, f"{os.path.splitext(file.filename)[0]}.pdf")
+
+            # Convert Excel to PDF
+            convert_excel_to_pdf(file_path, pdf_file_path)
+
+            return jsonify({'filename': f"{os.path.splitext(file.filename)[0]}.pdf"}), 200
+
+        else:
+            logging.error('Invalid file type, only Excel files are allowed')
+            return jsonify({'error': 'Invalid file type, only Excel files are allowed'}), 400
+
+    except Exception as e:
+        logging.error(f'Error during file upload: {e}')
+        return jsonify({'error': f'File upload failed: {str(e)}'}), 500
+
+def convert_excel_to_pdf(excel_path, pdf_path):
+    # Read the Excel file
+    df = pd.read_excel(excel_path)
+
+    # Create a PDF document
+    from reportlab.lib.pagesizes import letter
+    from reportlab.pdfgen import canvas
+
+    c = canvas.Canvas(pdf_path, pagesize=letter)
+    width, height = letter
+
+    # Define the row height and the starting position
+    row_height = 20
+    y = height - 40
+
+    for i, row in df.iterrows():
+        x = 40
+        for value in row:
+            c.drawString(x, y, str(value))
+            x += 100  # Move to the next column position
+
+        y -= row_height  # Move to the next row position
+
+        # Check if we need to add a new page
+        if y < row_height:
+            c.showPage()
+            y = height - 40
+
+    c.save()
 
 
 # CONVERTING PDF TO PDF/A
