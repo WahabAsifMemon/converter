@@ -56,16 +56,22 @@
             color: #6e84e6;
             text-decoration: none;
         }
+        #error-message {
+            display: none;
+            color: red;
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body>
     <h1>Convert JPG to PDF</h1>
-    <form id="upload-form" action="/upload-jpg-to-pdf'" method="post" enctype="multipart/form-data">
+    <form id="upload-form" action="/upload-jpg-to-pdf" method="post" enctype="multipart/form-data">
         <label for="file">Choose JPG files to convert:</label>
         <input type="file" id="file" name="file[]" accept=".jpg, .jpeg" multiple>
         <button type="submit">Convert to PDF</button>
     </form>
     <a id="download-link" href="#" target="_blank">Download PDF</a>
+    <div id="error-message"></div>
     <script>
         document.getElementById('upload-form').onsubmit = function(event) {
             event.preventDefault();
@@ -74,13 +80,18 @@
             xhr.open('POST', '/upload-jpg-to-pdf', true);
 
             xhr.onload = function() {
+                var response = JSON.parse(this.responseText);
+                var downloadLink = document.getElementById('download-link');
+                var errorMessage = document.getElementById('error-message');
+
                 if (this.status == 200) {
-                    var response = JSON.parse(this.responseText);
-                    var downloadLink = document.getElementById('download-link');
-                    downloadLink.href = '/download?filename=' + encodeURIComponent(response.pdf_file);
+                    downloadLink.href = '/download?filename=' + encodeURIComponent(response.filename);
                     downloadLink.style.display = 'block';
+                    errorMessage.style.display = 'none';
                 } else {
-                    alert('Error: ' + this.statusText);
+                    downloadLink.style.display = 'none';
+                    errorMessage.textContent = response.error;
+                    errorMessage.style.display = 'block';
                 }
             };
 
