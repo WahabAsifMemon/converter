@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Excel to PDF Converter</title>
+    <title>Merge Converter</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             background-color: #f4f4f9;
-            color: #333;
+            color: #e68484;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -17,7 +17,7 @@
             margin: 0;
         }
         h1 {
-            color: #5e5a5a;
+            color: #e68484;
         }
         form {
             background: #fff;
@@ -28,7 +28,7 @@
             text-align: center;
         }
         input[type="file"] {
-            border: 2px dashed #5e5a5a;
+            border: 2px dashed #e68484;
             padding: 20px;
             width: calc(100% - 40px);
             cursor: pointer;
@@ -40,7 +40,7 @@
             display: none;
         }
         button {
-            background-color: #5e5a5a;
+            background-color: #e68484;
             color: #fff;
             border: none;
             padding: 10px 20px;
@@ -51,7 +51,7 @@
             transition: background-color 0.3s ease;
         }
         button:hover {
-            background-color: #5e5a5a;
+            background-color: #e68484;
         }
         .progress {
             width: 300px;
@@ -64,7 +64,7 @@
         .progress-bar {
             width: 0;
             height: 20px;
-            background-color: #5e5a5a;
+            background-color: #e68484;
             text-align: center;
             color: white;
             line-height: 20px;
@@ -72,8 +72,8 @@
     </style>
 </head>
 <body>
-    <h1>Excel to PDF Converter</h1>
-    <form id="upload-form" action="/upload-excel-to-pdf" method="post" enctype="multipart/form-data">
+    <h1>Merge PDF </h1>
+    <form id="upload-form" action="/upload-and-merge" method="post" enctype="multipart/form-data">
         <label for="file">Choose a PDF file:</label>
         <input type="file" id="file" name="file" >
         <button type="submit">Convert</button>
@@ -87,7 +87,7 @@
             event.preventDefault();
             var formData = new FormData(this);
             var xhr = new XMLHttpRequest();
-            xhr.open('POST', '/upload-excel-to-pdf', true);
+            xhr.open('POST', '/upload-and-merge', true);
 
             xhr.upload.onprogress = function(e) {
                 if (e.lengthComputable) {

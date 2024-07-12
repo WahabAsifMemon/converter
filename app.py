@@ -16,6 +16,7 @@ from pptx import Presentation
 from pptx.util import Inches
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
+from PyPDF2 import PdfFileMerger
 
 app = Flask(__name__)
 UPLOAD_FOLDER = 'uploads'
@@ -90,6 +91,9 @@ def jpg_to_pdf():
 def word_to_pdf():
     return render_template('word-to-pdf.html')
 
+@app.route('/merge-pdf')
+def merge_pdf():
+    return render_template('merge-pdf.html')
 
 ALLOWED_EXTENSIONS = {'pdf'}
 ALLOWED_EXTENSIONS_DOCX = {'docx'}
@@ -409,6 +413,49 @@ def convert_excel_to_pdf(excel_path, pdf_path):
             y = height - 40
 
     c.save()
+
+
+@app.route('/upload-and-merge', methods=['POST'])
+def upload_and_merge():
+    try:
+        uploaded_files = request.files.getlist('file')
+
+        if len(uploaded_files) < 2:
+            return jsonify({'error': 'Please upload at least 2 PDF files to merge'}), 400
+
+        clear_folder(UPLOAD_FOLDER)
+        clear_folder(OUTPUT_FOLDER)
+
+        file_paths = []
+        for file in uploaded_files:
+            if file and allowed_file(file.filename):
+                filename = secure_filename(file.filename)
+                file_path = os.path.join(UPLOAD_FOLDER, filename)
+                file.save(file_path)
+                file_paths.append(file_path)
+            else:
+                logging.error(f'Invalid file type or no file selected: {file.filename}')
+                return jsonify({'error': f'Invalid file type or no file selected: {file.filename}'}), 400
+
+        merged_pdf_path = os.path.join(OUTPUT_FOLDER, 'merged_file.pdf')
+
+        # Merge PDF files
+        merge_pdfs(file_paths, merged_pdf_path)
+
+        return send_file(merged_pdf_path, as_attachment=True)
+
+    except Exception as e:
+        logging.error(f'Error during file upload and merge: {e}')
+        return jsonify({'error': f'File upload and merge failed: {str(e)}'}), 500
+
+def merge_pdfs(input_paths, output_path):
+    merger = PdfFileMerger()
+
+    for path in input_paths:
+        merger.append(path)
+
+    merger.write(output_path)
+    merger.close()
 
 # CONVERTING PDF TO PDF/A
 def convert_to_pdfa(input_path, output_path):
