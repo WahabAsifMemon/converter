@@ -14,6 +14,8 @@ from werkzeug.utils import secure_filename
 import subprocess
 from pptx import Presentation
 from pptx.util import Inches
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
 
 app = Flask(__name__)
 UPLOAD_FOLDER = 'uploads'
@@ -372,12 +374,12 @@ def upload_excel_to_pdf():
 
 def convert_excel_to_pdf(excel_path, pdf_path):
     # Read the Excel file
-    df = pd.read_excel(excel_path)
+    if excel_path.endswith('.xls'):
+        df = pd.read_excel(excel_path, engine='xlrd')
+    else:
+        df = pd.read_excel(excel_path, engine='openpyxl')
 
     # Create a PDF document
-    from reportlab.lib.pagesizes import letter
-    from reportlab.pdfgen import canvas
-
     c = canvas.Canvas(pdf_path, pagesize=letter)
     width, height = letter
 
@@ -399,7 +401,6 @@ def convert_excel_to_pdf(excel_path, pdf_path):
             y = height - 40
 
     c.save()
-
 
 # CONVERTING PDF TO PDF/A
 def convert_to_pdfa(input_path, output_path):
