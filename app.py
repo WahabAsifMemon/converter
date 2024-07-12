@@ -17,7 +17,8 @@ from pptx.util import Inches
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from PyPDF2 import PdfMerger, PdfReader, PdfWriter, PdfFileReader, PdfFileWriter
-
+from fpdf import FPDF
+from PIL import Image
 app = Flask(__name__)
 UPLOAD_FOLDER = 'uploads'
 OUTPUT_FOLDER = 'output'
@@ -107,6 +108,7 @@ def split_pdf():
 ALLOWED_EXTENSIONS = {'pdf'}
 ALLOWED_EXTENSIONS_DOCX = {'docx'}
 ALLOWED_EXTENSIONS_PPTX = {'pptx'}
+ALLOWED_EXTENSIONS_IMG = {'jpg', 'jpeg'}
 
 
 
@@ -577,6 +579,45 @@ def convert_to_pdfa(input_path, output_path):
         raise
 # CONVERTING PDF TO PDF/A
 
+# START JPG TO PDF
+@app.route('/upload-jpg-to-pdf', methods=['POST'])
+def upload_jpg_to_pdf():
+    try:
+        if 'file' not in request.files:
+            logging.error('No file part in the request')
+            return jsonify({'error': 'No file part'}), 400
+
+        files = request.files.getlist('file')
+
+        if len(files) == 0:
+            logging.error('No selected files')
+            return jsonify({'error': 'No selected files'}), 400
+
+        for file in files:
+            if not allowed_file(file.filename, ALLOWED_EXTENSIONS_IMG):
+                logging.error('Invalid file type, only JPG, JPEG, and PNG files are allowed')
+                return jsonify({'error': 'Invalid file type, only JPG, JPEG, and PNG files are allowed'}), 400
+
+        clear_folder(UPLOAD_FOLDER)
+        clear_folder(OUTPUT_FOLDER)
+
+        image_files = []
+        for file in files:
+            file_path = os.path.join(UPLOAD_FOLDER, file.filename)
+            file.save(file_path)
+            image_files.append(file_path)
+
+        output_pdf_path = os.path.join(OUTPUT_FOLDER, f"{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf")
+        images = [Image.open(image_file).convert('RGB') for image_file in image_files]
+        images[0].save(output_pdf_path, save_all=True, append_images=images[1:])
+
+        return jsonify({'filename': os.path.basename(output_pdf_path)}), 200
+
+    except Exception as e:
+        logging.error(f'Error during JPG to PDF conversion: {e}')
+        return jsonify({'error': f'JPG to PDF conversion failed: {str(e)}'}), 500
+# END JPG TO PDF
+
 
 
 @app.route('/download_all')
@@ -609,6 +650,22 @@ def download():
     else:
         return jsonify({'error': 'Filename not provided'}), 400
 
+def convert_jpg_to_pdf(input_folder, output_path):
+    pdf = FPDF()
+    image_list = []
+
+    for root, _, files in os.walk(input_folder):
+        for file in files:
+            if file.endswith('.jpg') or file.endswith('.jpeg'):
+                image_list.append(os.path.join(root, file))
+
+    for image_path in sorted(image_list):
+        image = Image.open(image_path)
+        width, height = image.size
+        pdf.add_page()
+        pdf.image(image_path, 0, 0, width * 0.75, height * 0.75)
+
+    pdf.output(output_path, 'F')
 
 
 if __name__ == '__main__':
