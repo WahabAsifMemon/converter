@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Split PDF</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        h1 {
+            color: #e68484;
+        }
+        form {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 300px;
+            text-align: center;
+        }
+        input[type="file"] {
+            border: 2px dashed #e68484;
+            padding: 20px;
+            width: calc(100% - 40px);
+            cursor: pointer;
+            border-radius: 8px;
+            transition: background-color 0.3s ease;
+        }
+
+        #download-button {
+            display: none;
+        }
+        button {
+            background-color: #e68484;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #e68484;
+        }
+    </style>
+</head>
+<body>
+    <h1>Split PDF</h1>
+    <form id="upload-form" action="/upload-and-split" method="post" enctype="multipart/form-data">
+        <label for="file">Choose a PDF file to split:</label>
+        <input type="file" id="file" name="file" accept=".pdf">
+        <button type="submit">Split PDF</button>
+    </form>
+    <div id="split-files">
+        <!-- List of split PDF files will be displayed here -->
+    </div>
+    <button id="download-button">Download Split PDFs</button>
+    <script>
+        document.getElementById('upload-form').onsubmit = function(event) {
+            event.preventDefault();
+            var formData = new FormData(this);
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '/upload-and-split', true);
+
+            xhr.onload = function() {
+                if (this.status == 200) {
+                    var response = JSON.parse(this.responseText);
+                    var splitFilesDiv = document.getElementById('split-files');
+                    splitFilesDiv.innerHTML = '';
+
+                    response.split_files.forEach(function(filename) {
+                        var link = document.createElement('a');
+                        link.setAttribute('href', '/download?filename=' + encodeURIComponent(filename));
+                        link.textContent = filename;
+                        link.style.display = 'block';
+                        splitFilesDiv.appendChild(link);
+                    });
+
+                    var downloadButton = document.getElementById('download-button');
+                    downloadButton.style.display = 'block';
+                    downloadButton.onclick = function() {
+                        window.location.href = '/download?filename=compressed_file.zip';
+                        downloadButton.style.display = 'none';
+                    };
+                } else {
+                    alert('Error: ' + this.statusText);
+                }
+            };
+
+            xhr.send(formData);
+        };
+    </script>
+</body>
+</html>

@@ -16,7 +16,7 @@ from pptx import Presentation
 from pptx.util import Inches
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
-from PyPDF2 import PdfMerger, PdfReader, PdfWriter
+from PyPDF2 import PdfMerger, PdfReader, PdfWriter, PdfFileReader, PdfFileWriter
 
 app = Flask(__name__)
 UPLOAD_FOLDER = 'uploads'
@@ -98,6 +98,11 @@ def merge_pdf():
 @app.route('/compress-pdf')
 def compress_pdf():
     return render_template('compress-pdf.html')
+
+@app.route('/split-pdf')
+def split_pdf():
+    return render_template('split-pdf.html')
+
 
 ALLOWED_EXTENSIONS = {'pdf'}
 ALLOWED_EXTENSIONS_DOCX = {'docx'}
@@ -503,6 +508,55 @@ def compress_pdf(input_path, output_path):
 
         with open(output_path, 'wb') as output_file:
             pdf_writer.write(output_file)
+
+
+@app.route('/upload-and-split', methods=['POST'])
+def upload_and_split():
+    try:
+        uploaded_file = request.files['file']
+
+        if not uploaded_file:
+            return jsonify({'error': 'No file uploaded'}), 400
+
+        if not allowed_file(uploaded_file.filename, {'pdf'}):
+            return jsonify({'error': 'Invalid file type. Please upload a PDF file'}), 400
+
+        clear_folder(UPLOAD_FOLDER)
+        clear_folder(OUTPUT_FOLDER)
+
+        filename = secure_filename(uploaded_file.filename)
+        file_path = os.path.join(UPLOAD_FOLDER, filename)
+        uploaded_file.save(file_path)
+
+        # Split PDF
+        split_pdf(file_path, OUTPUT_FOLDER)
+
+        # Get list of split files
+        split_files = []
+        for root, _, files in os.walk(OUTPUT_FOLDER):
+            for file in files:
+                if file.endswith('.pdf'):
+                    split_files.append(file)
+
+        return jsonify({'split_files': split_files}), 200
+
+    except Exception as e:
+        logging.error(f'Error during file upload and split: {e}')
+        return jsonify({'error': f'File upload and split failed: {str(e)}'}), 500
+
+def split_pdf(input_path, output_folder):
+    with open(input_path, 'rb') as input_file:
+        pdf_reader = PdfFileReader(input_file)
+        num_pages = pdf_reader.numPages
+
+        for page_num in range(num_pages):
+            pdf_writer = PdfFileWriter()
+            pdf_writer.addPage(pdf_reader.getPage(page_num))
+
+            output_path = os.path.join(output_folder, f'page_{page_num + 1}.pdf')
+
+            with open(output_path, 'wb') as output_file:
+                pdf_writer.write(output_file)
 
 # CONVERTING PDF TO PDF/A
 def convert_to_pdfa(input_path, output_path):
