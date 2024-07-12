@@ -59,33 +59,33 @@
     </style>
 </head>
 <body>
-    <h1>Convert JPG to PDF</h1>
-    <form id="upload-form" action="/upload-jpg-to-pdf'" method="post" enctype="multipart/form-data">
-        <label for="file">Choose JPG files to convert:</label>
-        <input type="file" id="file" name="file[]" accept=".jpg, .jpeg" multiple>
-        <button type="submit">Convert to PDF</button>
-    </form>
+    <h1>Coming Soon Convert JPG to PDF</h1>
+<!--    <form id="upload-form" action="/upload-jpg-to-pdf'" method="post" enctype="multipart/form-data">-->
+<!--        <label for="file">Choose JPG files to convert:</label>-->
+<!--        <input type="file" id="file" name="file[]" accept=".jpg, .jpeg" multiple>-->
+<!--        <button type="submit">Convert to PDF</button>-->
+<!--    </form>-->
     <a id="download-link" href="#" target="_blank">Download PDF</a>
-    <script>
-        document.getElementById('upload-form').onsubmit = function(event) {
-            event.preventDefault();
-            var formData = new FormData(this);
-            var xhr = new XMLHttpRequest();
-            xhr.open('POST', '/upload-jpg-to-pdf', true);
+<!--    <script>-->
+<!--        document.getElementById('upload-form').onsubmit = function(event) {-->
+<!--            event.preventDefault();-->
+<!--            var formData = new FormData(this);-->
+<!--            var xhr = new XMLHttpRequest();-->
+<!--            xhr.open('POST', '/upload-jpg-to-pdf', true);-->
 
-            xhr.onload = function() {
-                if (this.status == 200) {
-                    var response = JSON.parse(this.responseText);
-                    var downloadLink = document.getElementById('download-link');
-                    downloadLink.href = '/download?filename=' + encodeURIComponent(response.pdf_file);
-                    downloadLink.style.display = 'block';
-                } else {
-                    alert('Error: ' + this.statusText);
-                }
-            };
+<!--            xhr.onload = function() {-->
+<!--                if (this.status == 200) {-->
+<!--                    var response = JSON.parse(this.responseText);-->
+<!--                    var downloadLink = document.getElementById('download-link');-->
+<!--                    downloadLink.href = '/download?filename=' + encodeURIComponent(response.pdf_file);-->
+<!--                    downloadLink.style.display = 'block';-->
+<!--                } else {-->
+<!--                    alert('Error: ' + this.statusText);-->
+<!--                }-->
+<!--            };-->
 
-            xhr.send(formData);
-        };
-    </script>
+<!--            xhr.send(formData);-->
+<!--        };-->
+<!--    </script>-->
 </body>
 </html>
