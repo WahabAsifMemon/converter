@@ -531,14 +531,19 @@ def upload_and_split():
         # Split PDF
         split_pdf(file_path, OUTPUT_FOLDER)
 
-        # Get list of split files
-        split_files = []
+        # Create a zip file of split PDFs
+        zip_filename = 'split_files.zip'
+        zip_path = os.path.join(OUTPUT_FOLDER, zip_filename)
+        zipf = zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED)
+
         for root, _, files in os.walk(OUTPUT_FOLDER):
             for file in files:
                 if file.endswith('.pdf'):
-                    split_files.append(file)
+                    zipf.write(os.path.join(root, file), file)
 
-        return jsonify({'split_files': split_files}), 200
+        zipf.close()
+
+        return jsonify({'zip_file': zip_filename}), 200
 
     except Exception as e:
         logging.error(f'Error during file upload and split: {e}')

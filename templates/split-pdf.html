@@ -36,7 +36,7 @@
             transition: background-color 0.3s ease;
         }
 
-        #download-button {
+        #download-zip-button {
             display: none;
         }
         button {
@@ -65,7 +65,7 @@
     <div id="split-files">
         <!-- List of split PDF files will be displayed here -->
     </div>
-    <button id="download-button">Download Split PDFs</button>
+    <button id="download-zip-button">Download Split PDFs as ZIP</button>
     <script>
         document.getElementById('upload-form').onsubmit = function(event) {
             event.preventDefault();
@@ -76,22 +76,11 @@
             xhr.onload = function() {
                 if (this.status == 200) {
                     var response = JSON.parse(this.responseText);
-                    var splitFilesDiv = document.getElementById('split-files');
-                    splitFilesDiv.innerHTML = '';
-
-                    response.split_files.forEach(function(filename) {
-                        var link = document.createElement('a');
-                        link.setAttribute('href', '/download?filename=' + encodeURIComponent(filename));
-                        link.textContent = filename;
-                        link.style.display = 'block';
-                        splitFilesDiv.appendChild(link);
-                    });
-
-                    var downloadButton = document.getElementById('download-button');
-                    downloadButton.style.display = 'block';
-                    downloadButton.onclick = function() {
-                        window.location.href = '/download?filename=compressed_file.zip';
-                        downloadButton.style.display = 'none';
+                    var downloadZipButton = document.getElementById('download-zip-button');
+                    downloadZipButton.style.display = 'block';
+                    downloadZipButton.onclick = function() {
+                        window.location.href = '/download?filename=' + encodeURIComponent(response.zip_file);
+                        downloadZipButton.style.display = 'none';
                     };
                 } else {
                     alert('Error: ' + this.statusText);
