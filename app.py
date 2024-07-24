@@ -109,7 +109,7 @@ def split_pdf():
 
 
 @app.route('/unlock-pdf')
-def unlock_pdf():
+def show_unlock_pdf_form():
     return render_template('unlock-pdf.html')
 
 @app.route('/protect-pdf')
@@ -597,6 +597,44 @@ def upload_jpg_to_pdf():
    print('Wanag')
 # END JPG TO PDF
 
+@app.route('/unlock', methods=['POST'])
+def unlock_pdf():
+    if 'locked_pdf' not in request.files:
+        logging.error('No file provided')
+        return 'No file provided', 400
+
+    locked_pdf = request.files['locked_pdf']
+
+    try:
+        # Read the locked PDF
+        reader = PdfReader(locked_pdf)
+
+        # Check if the PDF is encrypted
+        if reader.is_encrypted:
+            try:
+                # Attempt to decrypt with an empty password
+                reader.decrypt('')
+                logging.info('PDF decrypted successfully')
+            except Exception as e:
+                logging.error(f'Failed to decrypt PDF: {e}')
+                return 'Failed to unlock PDF. It is encrypted with a password.', 400
+
+        # Create a new PDF with the same content but unlocked
+        writer = PdfWriter()
+        for page in reader.pages:
+            writer.add_page(page)
+
+        unlocked_pdf_io = io.BytesIO()
+        writer.write(unlocked_pdf_io)
+        unlocked_pdf_io.seek(0)
+
+        logging.info('PDF unlocked and ready for download')
+        return send_file(unlocked_pdf_io, as_attachment=True, download_name='unlocked.pdf')
+
+    except Exception as e:
+        logging.error(f'Error processing PDF: {e}')
+        return 'An error occurred while processing the PDF.', 500
+
 
 
 @app.route('/download_all')
@@ -646,92 +684,6 @@ def convert_jpg_to_pdf(input_folder, output_path):
 
     pdf.output(output_path, 'F')
 
-    @app.route('/upload-unlock-pdf', methods=['POST'])
-    def upload_unlock_pdf():
-        if 'file' not in request.files:
-            return jsonify({'error': 'No file part'}), 400
-
-        file = request.files['file']
-
-
-        if file and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            file.save(filepath)
-
-            # Unlock the PDF
-            with open(filepath, 'rb') as f:
-                reader = PyPDF2.PdfReader(f)
-                if reader.is_encrypted:
-                    try:
-                        reader.decrypt(password)
-                    except:
-                        return jsonify({'error': 'Incorrect password or unable to decrypt PDF'}), 400
-
-                    writer = PyPDF2.PdfWriter()
-                    for page_num in range(len(reader.pages)):
-                        writer.add_page(reader.pages[page_num])
-
-                    unlocked_pdf_path = os.path.join(app.config['UPLOAD_FOLDER'], 'unlocked_' + filename)
-                    with open(unlocked_pdf_path, 'wb') as out_f:
-                        writer.write(out_f)
-
-                    return jsonify({'filename': 'unlocked_' + filename}), 200
-                else:
-                    return jsonify({'error': 'PDF is not encrypted'}), 400
-
-        return jsonify({'error': 'Invalid file or missing password'}), 400
-
-    @app.route('/upload-protect-pdf', methods=['POST'])
-    def upload_protect_pdf():
-        if 'file' not in request.files:
-            logging.error('No file part in request')
-            return jsonify({'error': 'No file part'}), 400
-
-        file = request.files['file']
-        password = request.form.get('password')
-
-        if file.filename == '':
-            logging.error('No selected file')
-            return jsonify({'error': 'No selected file'}), 400
-
-        if file and allowed_file(file.filename, {'pdf'}):
-            clear_folder(UPLOAD_FOLDER)
-            clear_folder(OUTPUT_FOLDER)
-
-            file_path = os.path.join(UPLOAD_FOLDER, secure_filename(file.filename))
-            file.save(file_path)
-            logging.info(f'File saved to {file_path}')
-
-            output_file_path = os.path.join(OUTPUT_FOLDER, f"protected_{file.filename}")
-
-            try:
-                # Protect PDF
-                protect_pdf(file_path, output_file_path, password)
-                logging.info(f'Protected PDF saved to {output_file_path}')
-
-                return jsonify({'filename': f"protected_{file.filename}"}), 200
-            except Exception as e:
-                logging.error(f'Error protecting PDF: {e}')
-                # Print the full traceback in the logs
-                traceback.print_exc()
-                return jsonify({'error': f'Error protecting PDF: {str(e)}'}), 500
-        else:
-            logging.error('Invalid file type, only PDF files are allowed')
-            return jsonify({'error': 'Invalid file type, only PDF files are allowed'}), 400
-
-    def protect_pdf(input_path, output_path, password):
-        with open(input_path, 'rb') as file:
-            reader = PdfFileReader(file)
-
-            writer = PdfFileWriter()
-            for i in range(reader.numPages):
-                writer.addPage(reader.getPage(i))
-
-            writer.encrypt(password)
-
-            with open(output_path, 'wb') as output_file:
-                writer.write(output_file)
 
 if __name__ == '__main__':
     app.run(debug=True)
