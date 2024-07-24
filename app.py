@@ -658,7 +658,7 @@ def upload_protect_pdf():
         logging.error('No selected file')
         return jsonify({'error': 'No selected file'}), 400
 
-    if file and allowed_file(file.filename, {'pdf'}):
+    if file and allowed_file(file.filename, ALLOWED_EXTENSIONS):
         clear_folder(UPLOAD_FOLDER)
         clear_folder(OUTPUT_FOLDER)
 
@@ -683,18 +683,34 @@ def upload_protect_pdf():
         logging.error('Invalid file type, only PDF files are allowed')
         return jsonify({'error': 'Invalid file type, only PDF files are allowed'}), 400
 
+
+
 def protect_pdf(input_path, output_path, password):
-    with open(input_path, 'rb') as file:
-        reader = PdfFileReader(file)
+    try:
+        # Open the input PDF file
+        with open(input_path, 'rb') as file:
+            reader = PdfReader(file)
 
-        writer = PdfFileWriter()
-        for i in range(reader.numPages):
-            writer.addPage(reader.getPage(i))
+            # Create a PdfWriter object
+            writer = PdfWriter()
 
-        writer.encrypt(password)
+            # Add pages from the reader to the writer
+            for page in reader.pages:
+                writer.add_page(page)
 
-        with open(output_path, 'wb') as output_file:
-            writer.write(output_file)
+            # Encrypt the PDF with the password
+            writer.encrypt(password)
+
+            # Write the encrypted PDF to the output file
+            with open(output_path, 'wb') as output_file:
+                writer.write(output_file)
+
+        logging.info(f'Protected PDF saved to {output_path}')
+    except Exception as e:
+        logging.error(f'Error protecting PDF: {e}')
+        # Print the full traceback in the logs
+        traceback.print_exc()
+        raise e
 
 
 @app.route('/download_all')
