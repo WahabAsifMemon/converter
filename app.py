@@ -689,30 +689,41 @@ def convert_jpg_to_pdf(input_folder, output_path):
         file = request.files['file']
         password = request.form.get('password')
 
-        if file and allowed_file(file.filename) and password:
-            filename = secure_filename(file.filename)
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            file.save(filepath)
+        if file.filename == '':
+            return jsonify({'error': 'No selected file'}), 400
 
-            # Protect the PDF
+        if file and allowed_file(file.filename, {'pdf'}):
+            clear_folder(UPLOAD_FOLDER)
+            clear_folder(OUTPUT_FOLDER)
+
+            file_path = os.path.join(UPLOAD_FOLDER, secure_filename(file.filename))
+            file.save(file_path)
+
+            output_file_path = os.path.join(OUTPUT_FOLDER, f"protected_{file.filename}")
+
             try:
-                reader = PyPDF2.PdfReader(filepath)
-                writer = PyPDF2.PdfWriter()
+                # Protect PDF
+                protect_pdf(file_path, output_file_path, password)
 
-                for page_num in range(len(reader.pages)):
-                    writer.add_page(reader.pages[page_num])
-
-                writer.encrypt(user_pwd=password, owner_pwd=None, use_128bit=True)
-
-                protected_pdf_path = os.path.join(app.config['UPLOAD_FOLDER'], 'protected_' + filename)
-                with open(protected_pdf_path, 'wb') as out_f:
-                    writer.write(out_f)
-
-                return jsonify({'filename': 'protected_' + filename}), 200
+                return jsonify({'filename': f"protected_{file.filename}"}), 200
             except Exception as e:
-                return jsonify({'error': str(e)}), 500
+                logging.error(f'Error protecting PDF: {e}')
+                return jsonify({'error': f'Error protecting PDF: {str(e)}'}), 500
+        else:
+            return jsonify({'error': 'Invalid file type, only PDF files are allowed'}), 400
 
-        return jsonify({'error': 'Invalid file or missing password'}), 400
+    def protect_pdf(input_path, output_path, password):
+        with open(input_path, 'rb') as file:
+            reader = PdfFileReader(file)
+
+            writer = PdfFileWriter()
+            for i in range(reader.numPages):
+                writer.addPage(reader.getPage(i))
+
+            writer.encrypt(password)
+
+            with open(output_path, 'wb') as output_file:
+                writer.write(output_file)
 
 
 if __name__ == '__main__':
