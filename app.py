@@ -613,18 +613,15 @@ def unlock_pdf():
         if reader.is_encrypted:
             try:
                 # Attempt to decrypt with an empty password
-                reader.decrypt('')
+                result = reader.decrypt('')
+                if result == 0:
+                    logging.error('Failed to decrypt PDF: No password provided')
+                    return jsonify({'error': 'Failed to unlock PDF. It is encrypted and requires a password.'}), 400
                 logging.info('PDF decrypted successfully')
             except Exception as e:
                 error_message = f'Failed to decrypt PDF: {e}'
                 logging.error(error_message)
                 return jsonify({'error': error_message}), 400
-
-        # Verify if the PDF is still encrypted
-        if reader.is_encrypted:
-            error_message = 'Failed to unlock PDF. It remains encrypted and requires a password.'
-            logging.error(error_message)
-            return jsonify({'error': error_message}), 400
 
         # Create a new PDF with the same content but unlocked
         writer = PdfWriter()
