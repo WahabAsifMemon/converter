@@ -684,8 +684,7 @@ def convert_jpg_to_pdf(input_folder, output_path):
 
     @app.route('/upload-protect-pdf', methods=['POST'])
     def upload_protect_pdf():
-            print('wahab')
-
+        return 'wahab';
 
 if __name__ == '__main__':
     app.run(debug=True)
