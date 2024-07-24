@@ -645,6 +645,57 @@ def unlock_pdf():
         logging.error(error_message)
         return jsonify({'error': error_message}), 500
 
+@app.route('/upload-protect-pdf', methods=['POST'])
+def upload_protect_pdf():
+    if 'file' not in request.files:
+        logging.error('No file part in request')
+        return jsonify({'error': 'No file part'}), 400
+
+    file = request.files['file']
+    password = request.form.get('password')
+
+    if file.filename == '':
+        logging.error('No selected file')
+        return jsonify({'error': 'No selected file'}), 400
+
+    if file and allowed_file(file.filename, {'pdf'}):
+        clear_folder(UPLOAD_FOLDER)
+        clear_folder(OUTPUT_FOLDER)
+
+        file_path = os.path.join(UPLOAD_FOLDER, secure_filename(file.filename))
+        file.save(file_path)
+        logging.info(f'File saved to {file_path}')
+
+        output_file_path = os.path.join(OUTPUT_FOLDER, f"protected_{file.filename}")
+
+        try:
+            # Protect PDF
+            protect_pdf(file_path, output_file_path, password)
+            logging.info(f'Protected PDF saved to {output_file_path}')
+
+            return jsonify({'filename': f"protected_{file.filename}"}), 200
+        except Exception as e:
+            logging.error(f'Error protecting PDF: {e}')
+            # Print the full traceback in the logs
+            traceback.print_exc()
+            return jsonify({'error': f'Error protecting PDF: {str(e)}'}), 500
+    else:
+        logging.error('Invalid file type, only PDF files are allowed')
+        return jsonify({'error': 'Invalid file type, only PDF files are allowed'}), 400
+
+def protect_pdf(input_path, output_path, password):
+    with open(input_path, 'rb') as file:
+        reader = PdfFileReader(file)
+
+        writer = PdfFileWriter()
+        for i in range(reader.numPages):
+            writer.addPage(reader.getPage(i))
+
+        writer.encrypt(password)
+
+        with open(output_path, 'wb') as output_file:
+            writer.write(output_file)
+
 
 @app.route('/download_all')
 def download_all():
