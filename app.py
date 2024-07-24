@@ -616,8 +616,9 @@ def unlock_pdf():
                 reader.decrypt('')
                 logging.info('PDF decrypted successfully')
             except Exception as e:
-                logging.error(f'Failed to decrypt PDF: {e}')
-                return 'Failed to unlock PDF. It is encrypted with a password.', 400
+                error_message = f'Failed to decrypt PDF: {e}'
+                logging.error(error_message)
+                return jsonify({'error': error_message}), 400
 
         # Create a new PDF with the same content but unlocked
         writer = PdfWriter()
@@ -632,9 +633,9 @@ def unlock_pdf():
         return send_file(unlocked_pdf_io, as_attachment=True, download_name='unlocked.pdf')
 
     except Exception as e:
-        logging.error(f'Error processing PDF: {e}')
-        return 'An error occurred while processing the PDF.', 500
-
+        error_message = f'Error processing PDF: {e}'
+        logging.error(error_message)
+        return jsonify({'error': error_message}), 500
 
 
 @app.route('/download_all')
