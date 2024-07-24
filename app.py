@@ -111,6 +111,10 @@ def split_pdf():
 def unlock_pdf():
     return render_template('unlock-pdf.html')
 
+@app.route('/protect-pdf')
+def protect_pdf():
+    return render_template('protect-pdf.html')
+
 
 ALLOWED_EXTENSIONS = {'pdf'}
 ALLOWED_EXTENSIONS_DOCX = {'docx'}
@@ -674,6 +678,39 @@ def convert_jpg_to_pdf(input_folder, output_path):
                     return jsonify({'filename': 'unlocked_' + filename}), 200
                 else:
                     return jsonify({'error': 'PDF is not encrypted'}), 400
+
+        return jsonify({'error': 'Invalid file or missing password'}), 400
+
+    @app.route('/upload-protect-pdf', methods=['POST'])
+    def upload_protect_pdf():
+        if 'file' not in request.files:
+            return jsonify({'error': 'No file part'}), 400
+
+        file = request.files['file']
+        password = request.form.get('password')
+
+        if file and allowed_file(file.filename) and password:
+            filename = secure_filename(file.filename)
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            file.save(filepath)
+
+            # Protect the PDF
+            try:
+                reader = PyPDF2.PdfReader(filepath)
+                writer = PyPDF2.PdfWriter()
+
+                for page_num in range(len(reader.pages)):
+                    writer.add_page(reader.pages[page_num])
+
+                writer.encrypt(user_pwd=password, owner_pwd=None, use_128bit=True)
+
+                protected_pdf_path = os.path.join(app.config['UPLOAD_FOLDER'], 'protected_' + filename)
+                with open(protected_pdf_path, 'wb') as out_f:
+                    writer.write(out_f)
+
+                return jsonify({'filename': 'protected_' + filename}), 200
+            except Exception as e:
+                return jsonify({'error': str(e)}), 500
 
         return jsonify({'error': 'Invalid file or missing password'}), 400
 
