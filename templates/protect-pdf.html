@@ -1,202 +1,30 @@
-<!--  <!doctype html>-->
-<!--    <html lang="en">-->
-<!--    <head>-->
-<!--        <meta charset="UTF-8">-->
-<!--        <meta name="viewport" content="width=device-width, initial-scale=1.0">-->
-<!--        <title>PDF Password Protector</title>-->
-<!--        <style>-->
-<!--            body {-->
-<!--                font-family: Arial, sans-serif;-->
-<!--                background-color: #f4f4f9;-->
-<!--                color: #333;-->
-<!--                display: flex;-->
-<!--                flex-direction: column;-->
-<!--                justify-content: center;-->
-<!--                align-items: center;-->
-<!--                height: 100vh;-->
-<!--                margin: 0;-->
-<!--            }-->
-<!--            h1 {-->
-<!--                color: #000;-->
-<!--            }-->
-<!--            form {-->
-<!--                background: #fff;-->
-<!--                padding: 20px;-->
-<!--                border-radius: 8px;-->
-<!--                box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);-->
-<!--                width: 300px;-->
-<!--                text-align: center;-->
-<!--            }-->
-<!--            input[type="file"] {-->
-<!--                border: 2px dashed #000;-->
-<!--                padding: 20px;-->
-<!--                width: calc(100% - 40px);-->
-<!--                cursor: pointer;-->
-<!--                border-radius: 8px;-->
-<!--                transition: background-color 0.3s ease;-->
-<!--            }-->
-<!--            input[type="text"] {-->
-<!--                padding: 10px;-->
-<!--                width: calc(100% - 20px);-->
-<!--                border: 1px solid #ddd;-->
-<!--                border-radius: 5px;-->
-<!--                margin-top: 10px;-->
-<!--            }-->
-<!--            button {-->
-<!--                background-color: #000;-->
-<!--                color: #fff;-->
-<!--                border: none;-->
-<!--                padding: 10px 20px;-->
-<!--                border-radius: 5px;-->
-<!--                cursor: pointer;-->
-<!--                font-size: 16px;-->
-<!--                margin-top: 10px;-->
-<!--                transition: background-color 0.3s ease;-->
-<!--            }-->
-<!--            button:hover {-->
-<!--                background-color: #333;-->
-<!--            }-->
-<!--        </style>-->
-<!--    </head>-->
-<!--    <body>-->
-<!--        <h1>PDF Password Protector</h1>-->
-<!--        <form id="upload-form" action="/upload-protect-pdf" method="post" enctype="multipart/form-data">-->
-<!--            <label for="file">Choose a PDF file:</label>-->
-<!--            <input type="file" id="file" name="file" accept=".pdf">-->
-<!--            <input type="text" name="password" placeholder="Enter PDF password">-->
-<!--            <button type="submit">Protect PDF</button>-->
-<!--        </form>-->
-<!--       <div class="progress">-->
-<!--        <div class="progress-bar" id="progress-bar">0%</div>-->
-<!--    </div>-->
-<!--    <button id="download-button">Download Unlocked PDF</button>-->
-<!--    <script>-->
-<!--        document.getElementById('upload-form').onsubmit = function(event) {-->
-<!--            event.preventDefault();-->
-<!--            var formData = new FormData(this);-->
-<!--            var xhr = new XMLHttpRequest();-->
-<!--            xhr.open('POST', '/upload-protect-pdf', true);-->
-
-<!--            xhr.upload.onprogress = function(e) {-->
-<!--                if (e.lengthComputable) {-->
-<!--                    var percentComplete = (e.loaded / e.total) * 100;-->
-<!--                    var progressBar = document.getElementById('progress-bar');-->
-<!--                    progressBar.style.width = percentComplete + '%';-->
-<!--                    progressBar.textContent = Math.round(percentComplete) + '%';-->
-<!--                    document.querySelector('.progress').style.display = 'block';-->
-<!--                }-->
-<!--            };-->
-
-<!--            xhr.onload = function() {-->
-<!--                if (this.status == 200) {-->
-<!--                    var response = JSON.parse(this.responseText);-->
-<!--                    var downloadButton = document.getElementById('download-button');-->
-<!--                    downloadButton.style.display = 'block';-->
-<!--                    downloadButton.onclick = function() {-->
-<!--                        window.location.href = '/download?filename=' + encodeURIComponent(response.filename);-->
-<!--                        downloadButton.style.display = 'none';-->
-<!--                    };-->
-<!--                } else {-->
-<!--                    alert('Error: ' + this.statusText);-->
-<!--                }-->
-<!--            };-->
-
-<!--            xhr.send(formData);-->
-<!--        };-->
-<!--    </script>-->
-<!--    </body>-->
-<!--    </html>-->
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Protect PDF</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f9;
-            color: #333;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-        }
-        h1 {
-            color: #5a2626;
-        }
-        form {
-            background: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            width: 300px;
-            text-align: center;
-        }
-        input[type="file"] {
-            border: 2px dashed #5a2626;
-            padding: 20px;
-            width: calc(100% - 40px);
-            cursor: pointer;
-            border-radius: 8px;
-            transition: background-color 0.3s ease;
-        }
-
-        input[type="text"] {
-            padding: 10px;
-            width: calc(100% - 20px);
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            margin-top: 10px;
-        }
-
-        #download-button {
-            display: none;
-        }
-        button {
-            background-color: #5a2626;
-            color: #fff;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-            margin-top: 10px;
-            transition: background-color 0.3s ease;
-        }
-        button:hover {
-            background-color: #5a2626;
-        }
-        .progress {
-            width: 300px;
-            background-color: #ddd;
-            border-radius: 5px;
-            overflow: hidden;
-            margin-top: 10px;
-            display: none;
-        }
-        .progress-bar {
-            width: 0;
-            height: 20px;
-            background-color: #5a2626;
-            text-align: center;
-            color: white;
-            line-height: 20px;
-        }
-    </style>
 </head>
 <body>
     <h1>Protect PDF</h1>
-    <form id="upload-form" action="/upload-protect-pdf" method="post" enctype="multipart/form-data">
-        <label for="file">Choose a PDF file:</label>
-        <input type="file" id="file" name="file"  accept=".pdf">
-         <input type="text" name="password" placeholder="Enter PDF password">
-        <button type="submit">Convert</button>
+    <form action="/upload-protect-pdf" method="post" enctype="multipart/form-data">
+        <input type="file" name="file" accept=".pdf" required>
+        <input type="password" name="password" placeholder="Password" required>
+        <button type="submit">Protect PDF</button>
     </form>
 
+    <div id="protected-pdf-result" style="display: none;">
+        <p>Your PDF has been protected.</p>
+        <a id="download-link" href="" download>Download Protected PDF</a>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const filename = urlParams.get('filename');
+        if (filename) {
+            document.getElementById('protected-pdf-result').style.display = 'block';
+            document.getElementById('download-link').href = `/download-protected-pdf?filename=${filename}`;
+        }
+    </script>
 </body>
 </html>
