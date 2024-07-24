@@ -644,7 +644,7 @@ def convert_jpg_to_pdf(input_folder, output_path):
     @app.route('/upload-unlock-pdf', methods=['POST'])
     def upload_unlock_pdf():
         if 'file' not in request.files:
-            return 'No file part'
+            return jsonify({'error': 'No file part'}), 400
 
         file = request.files['file']
         password = request.form.get('password')
@@ -661,7 +661,7 @@ def convert_jpg_to_pdf(input_folder, output_path):
                     try:
                         reader.decrypt(password)
                     except:
-                        return 'Incorrect password or unable to decrypt PDF'
+                        return jsonify({'error': 'Incorrect password or unable to decrypt PDF'}), 400
 
                     writer = PyPDF2.PdfWriter()
                     for page_num in range(len(reader.pages)):
@@ -671,11 +671,11 @@ def convert_jpg_to_pdf(input_folder, output_path):
                     with open(unlocked_pdf_path, 'wb') as out_f:
                         writer.write(out_f)
 
-                    return send_file(unlocked_pdf_path, as_attachment=True, download_name='unlocked_' + filename)
+                    return jsonify({'filename': 'unlocked_' + filename}), 200
                 else:
-                    return 'PDF is not encrypted'
+                    return jsonify({'error': 'PDF is not encrypted'}), 400
 
-        return 'Invalid file or missing password'
+        return jsonify({'error': 'Invalid file or missing password'}), 400
 
 
 if __name__ == '__main__':
