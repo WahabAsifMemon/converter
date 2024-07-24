@@ -597,6 +597,17 @@ def upload_jpg_to_pdf():
    print('Wanag')
 # END JPG TO PDF
 
+def attempt_unlock_pdf(reader, password_attempts):
+    for password in password_attempts:
+        try:
+            if reader.decrypt(password):
+                logging.info(f'Successfully decrypted PDF with password: {password}')
+                return True
+        except Exception as e:
+            logging.error(f'Failed to decrypt PDF with password {password}: {e}')
+            continue
+    return False
+
 @app.route('/unlock', methods=['POST'])
 def unlock_pdf():
     if 'locked_pdf' not in request.files:
@@ -611,17 +622,11 @@ def unlock_pdf():
 
         # Check if the PDF is encrypted
         if reader.is_encrypted:
-            try:
-                # Attempt to decrypt with an empty password
-                result = reader.decrypt('')
-                if result == 0:
-                    logging.error('Failed to decrypt PDF: No password provided')
-                    return jsonify({'error': 'Failed to unlock PDF. It is encrypted and requires a password.'}), 400
-                logging.info('PDF decrypted successfully')
-            except Exception as e:
-                error_message = f'Failed to decrypt PDF: {e}'
-                logging.error(error_message)
-                return jsonify({'error': error_message}), 400
+            # Try a range of passwords (1 to 10)
+            password_attempts = [str(i) for i in range(1, 11)]
+            if not attempt_unlock_pdf(reader, password_attempts):
+                logging.error('Failed to unlock PDF. It remains encrypted and requires a password.')
+                return jsonify({'error': 'Failed to unlock PDF. It is encrypted and requires a password.'}), 400
 
         # Create a new PDF with the same content but unlocked
         writer = PdfWriter()
