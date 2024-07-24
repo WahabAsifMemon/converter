@@ -20,6 +20,7 @@ from PyPDF2 import PdfMerger, PdfReader, PdfWriter, PdfFileReader, PdfFileWriter
 from fpdf import FPDF
 from PIL import Image
 import PyPDF2
+import traceback
 
 app = Flask(__name__)
 UPLOAD_FOLDER = 'uploads'
@@ -708,6 +709,8 @@ def convert_jpg_to_pdf(input_folder, output_path):
                 return jsonify({'filename': f"protected_{file.filename}"}), 200
             except Exception as e:
                 logging.error(f'Error protecting PDF: {e}')
+                # Print the full traceback in the console
+                traceback.print_exc()
                 return jsonify({'error': f'Error protecting PDF: {str(e)}'}), 500
         else:
             return jsonify({'error': 'Invalid file type, only PDF files are allowed'}), 400
