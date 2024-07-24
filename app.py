@@ -21,11 +21,8 @@ from fpdf import FPDF
 from PIL import Image
 import PyPDF2
 import traceback
-import logging
 
 app = Flask(__name__)
-logging.basicConfig(level=logging.INFO)
-
 UPLOAD_FOLDER = 'uploads'
 OUTPUT_FOLDER = 'output'
 
@@ -604,7 +601,6 @@ def upload_jpg_to_pdf():
 @app.route('/unlock', methods=['POST'])
 def unlock_pdf():
     if 'locked_pdf' not in request.files:
-        logging.error('No file provided')
         return 'No file provided', 400
 
     locked_pdf = request.files['locked_pdf']
@@ -618,7 +614,6 @@ def unlock_pdf():
             try:
                 # Attempt to decrypt with an empty password
                 reader.decrypt('')
-                logging.info('PDF decrypted successfully')
             except Exception as e:
                 logging.error(f'Failed to decrypt PDF: {e}')
                 return 'Failed to unlock PDF. It is encrypted with a password.', 400
@@ -632,13 +627,11 @@ def unlock_pdf():
         writer.write(unlocked_pdf_io)
         unlocked_pdf_io.seek(0)
 
-        logging.info('PDF unlocked and ready for download')
         return send_file(unlocked_pdf_io, as_attachment=True, download_name='unlocked.pdf')
 
     except Exception as e:
         logging.error(f'Error processing PDF: {e}')
         return 'An error occurred while processing the PDF.', 500
-
 
 
 @app.route('/download_all')
