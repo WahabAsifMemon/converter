@@ -19,6 +19,8 @@ from reportlab.pdfgen import canvas
 from PyPDF2 import PdfMerger, PdfReader, PdfWriter, PdfFileReader, PdfFileWriter
 from fpdf import FPDF
 from PIL import Image
+import PyPDF2
+
 app = Flask(__name__)
 UPLOAD_FOLDER = 'uploads'
 OUTPUT_FOLDER = 'output'
@@ -103,6 +105,11 @@ def compress_pdf():
 @app.route('/split-pdf')
 def split_pdf():
     return render_template('split-pdf.html')
+
+
+@app.route('/unlock-pdf')
+def unlock_pdf():
+    return render_template('unlock-pdf.html')
 
 
 ALLOWED_EXTENSIONS = {'pdf'}
@@ -633,6 +640,42 @@ def convert_jpg_to_pdf(input_folder, output_path):
         pdf.image(image_path, 0, 0, width * 0.75, height * 0.75)
 
     pdf.output(output_path, 'F')
+
+    @app.route('/upload-unlock-pdf', methods=['POST'])
+    def upload_unlock_pdf():
+        if 'file' not in request.files:
+            return 'No file part'
+
+        file = request.files['file']
+        password = request.form.get('password')
+
+        if file and allowed_file(file.filename) and password:
+            filename = secure_filename(file.filename)
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            file.save(filepath)
+
+            # Unlock the PDF
+            with open(filepath, 'rb') as f:
+                reader = PyPDF2.PdfReader(f)
+                if reader.is_encrypted:
+                    try:
+                        reader.decrypt(password)
+                    except:
+                        return 'Incorrect password or unable to decrypt PDF'
+
+                    writer = PyPDF2.PdfWriter()
+                    for page_num in range(len(reader.pages)):
+                        writer.add_page(reader.pages[page_num])
+
+                    unlocked_pdf_path = os.path.join(app.config['UPLOAD_FOLDER'], 'unlocked_' + filename)
+                    with open(unlocked_pdf_path, 'wb') as out_f:
+                        writer.write(out_f)
+
+                    return send_file(unlocked_pdf_path, as_attachment=True, download_name='unlocked_' + filename)
+                else:
+                    return 'PDF is not encrypted'
+
+        return 'Invalid file or missing password'
 
 
 if __name__ == '__main__':
