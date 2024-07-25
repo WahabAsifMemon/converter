@@ -22,6 +22,7 @@ from PIL import Image
 from io import BytesIO
 import PyPDF2
 import traceback
+import itertools
 
 app = Flask(__name__)
 UPLOAD_FOLDER = 'uploads'
@@ -600,6 +601,18 @@ def upload_jpg_to_pdf():
 
 
 
+def generate_numeric_passwords():
+    # Generate numeric passwords from 0 to 999999 (6 digits)
+    for length in range(1, 7):
+        for password_tuple in itertools.product('0123456789', repeat=length):
+            yield ''.join(password_tuple)
+
+def try_numeric_passwords(pdf_document):
+    for password in generate_numeric_passwords():
+        if pdf_document.authenticate(password):
+            return True, password
+    return False, None
+
 @app.route('/unlock', methods=['POST'])
 def unlock_pdf():
     if 'file' not in request.files:
@@ -621,16 +634,19 @@ def unlock_pdf():
             # Attempt to unlock PDF
             pdf_document = fitz.open(file_path)
             if pdf_document.is_encrypted:
-                pdf_document.authenticate('')
-                pdf_data = pdf_document.write()
+                success, password = try_numeric_passwords(pdf_document)
+                if success:
+                    pdf_data = pdf_document.write()
 
-                # Send the unlocked PDF file back to the client
-                return send_file(
-                    BytesIO(pdf_data),
-                    mimetype='application/pdf',
-                    as_attachment=True,
-                    attachment_filename=f'unlocked_{file.filename}'
-                )
+                    # Send the unlocked PDF file back to the client
+                    return send_file(
+                        BytesIO(pdf_data),
+                        mimetype='application/pdf',
+                        as_attachment=True,
+                        attachment_filename=f'unlocked_{file.filename}'
+                    )
+                else:
+                    return jsonify({'error': 'Failed to unlock PDF with numeric passwords'}), 400
             else:
                 return jsonify({'error': 'PDF is not password protected'}), 400
         except Exception as e:
@@ -639,7 +655,6 @@ def unlock_pdf():
     else:
         logging.error('Invalid file type, only PDF files are allowed')
         return jsonify({'error': 'Invalid file type, only PDF files are allowed'}), 400
-
 
 @app.route('/upload-protect-pdf', methods=['POST'])
 def upload_protect_pdf():
