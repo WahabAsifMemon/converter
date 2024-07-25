@@ -636,15 +636,19 @@ def unlock_pdf():
             if pdf_document.is_encrypted:
                 success, password = try_numeric_passwords(pdf_document)
                 if success:
-                    pdf_data = pdf_document.write()
+                    # Verify the document has been decrypted
+                    if not pdf_document.is_encrypted:
+                        pdf_data = pdf_document.write()
 
-                    # Send the unlocked PDF file back to the client
-                    return send_file(
-                        BytesIO(pdf_data),
-                        mimetype='application/pdf',
-                        as_attachment=True,
-                        download_name=f'unlocked_{file.filename}'
-                    )
+                        # Send the unlocked PDF file back to the client
+                        return send_file(
+                            BytesIO(pdf_data),
+                            mimetype='application/pdf',
+                            as_attachment=True,
+                            download_name=f'unlocked_{file.filename}'
+                        )
+                    else:
+                        return jsonify({'error': 'PDF is still encrypted after trying passwords'}), 400
                 else:
                     return jsonify({'error': 'Failed to unlock PDF with numeric passwords'}), 400
             else:
