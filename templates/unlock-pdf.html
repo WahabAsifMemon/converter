@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF Unlocker</title>
+    <title>Unlock PDF</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -17,7 +17,7 @@
             margin: 0;
         }
         h1 {
-            color: #000;
+            color: #5a2626;
         }
         form {
             background: #fff;
@@ -28,7 +28,7 @@
             text-align: center;
         }
         input[type="file"] {
-            border: 2px dashed #000;
+            border: 2px dashed #5a2626;
             padding: 20px;
             width: calc(100% - 40px);
             cursor: pointer;
@@ -42,8 +42,12 @@
             border-radius: 5px;
             margin-top: 10px;
         }
+        #download-button {
+            display: none;
+            margin-top: 10px;
+        }
         button {
-            background-color: #000;
+            background-color: #5a2626;
             color: #fff;
             border: none;
             padding: 10px 20px;
@@ -54,7 +58,7 @@
             transition: background-color 0.3s ease;
         }
         button:hover {
-            background-color: #333;
+            background-color: #3a1b1b;
         }
         .progress {
             width: 300px;
@@ -67,60 +71,57 @@
         .progress-bar {
             width: 0;
             height: 20px;
-            background-color: #000;
+            background-color: #5a2626;
             text-align: center;
             color: white;
             line-height: 20px;
         }
-        #download-button {
-            display: none;
-        }
     </style>
 </head>
 <body>
-    <h1> PDF Unlocker</h1>
+    <h1>Unlock PDF</h1>
     <form id="upload-form" action="/upload-unlock-pdf" method="post" enctype="multipart/form-data">
         <label for="file">Choose a PDF file:</label>
-        <input type="file" id="file" name="locked_pdf" accept=".pdf">
+        <input type="file" id="file" name="file" accept=".pdf">
         <button type="submit">Unlock</button>
     </form>
-<!--    <div class="progress">-->
-<!--        <div class="progress-bar" id="progress-bar">0%</div>-->
-<!--    </div>-->
-<!--    <button id="download-button">Download Unlocked PDF</button>-->
-<!--    <script>-->
-<!--        document.getElementById('upload-form').onsubmit = function(event) {-->
-<!--            event.preventDefault();-->
-<!--            var formData = new FormData(this);-->
-<!--            var xhr = new XMLHttpRequest();-->
-<!--            xhr.open('POST', '/upload-unlock-pdf', true);-->
+    <div class="progress">
+        <div class="progress-bar" id="progress-bar">0%</div>
+    </div>
+    <button id="download-button">Download Unlocked PDF</button>
 
-<!--            xhr.upload.onprogress = function(e) {-->
-<!--                if (e.lengthComputable) {-->
-<!--                    var percentComplete = (e.loaded / e.total) * 100;-->
-<!--                    var progressBar = document.getElementById('progress-bar');-->
-<!--                    progressBar.style.width = percentComplete + '%';-->
-<!--                    progressBar.textContent = Math.round(percentComplete) + '%';-->
-<!--                    document.querySelector('.progress').style.display = 'block';-->
-<!--                }-->
-<!--            };-->
+    <script>
+        document.getElementById('upload-form').onsubmit = function(event) {
+            event.preventDefault();
+            var formData = new FormData(this);
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '/upload-unlock-pdf', true);
 
-<!--            xhr.onload = function() {-->
-<!--                if (this.status == 200) {-->
-<!--                    var response = JSON.parse(this.responseText);-->
-<!--                    var downloadButton = document.getElementById('download-button');-->
-<!--                    downloadButton.style.display = 'block';-->
-<!--                    downloadButton.onclick = function() {-->
-<!--                        window.location.href = '/download?filename=' + encodeURIComponent(response.filename);-->
-<!--                        downloadButton.style.display = 'none';-->
-<!--                    };-->
-<!--                } else {-->
-<!--                    alert('Error: ' + this.statusText);-->
-<!--                }-->
-<!--            };-->
+            xhr.upload.onprogress = function(e) {
+                if (e.lengthComputable) {
+                    var percentComplete = (e.loaded / e.total) * 100;
+                    var progressBar = document.getElementById('progress-bar');
+                    progressBar.style.width = percentComplete + '%';
+                    progressBar.textContent = Math.round(percentComplete) + '%';
+                    document.querySelector('.progress').style.display = 'block';
+                }
+            };
 
-<!--            xhr.send(formData);-->
-<!--        };-->
-<!--    </script>-->
+            xhr.onload = function() {
+                if (this.status == 200) {
+                    var downloadButton = document.getElementById('download-button');
+                    downloadButton.style.display = 'block';
+                    downloadButton.onclick = function() {
+                        window.location.href = URL.createObjectURL(new Blob([this.response], {type: 'application/pdf'}));
+                    }.bind(this);
+                } else {
+                    alert('Error: ' + this.statusText);
+                }
+            };
+
+            xhr.responseType = 'blob';
+            xhr.send(formData);
+        };
+    </script>
 </body>
 </html>
