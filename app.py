@@ -613,36 +613,53 @@ def try_numeric_passwords(pdf_document):
             return True, password
     return False, None
 
-
-@app.route('/unlock_pdf', methods=['POST'])
+@app.route('/unlock', methods=['POST'])
 def unlock_pdf():
-    if 'pdf' not in request.files:
-        return "No file part", 400
+    if 'file' not in request.files:
+        logging.error('No file part in request')
+        return jsonify({'error': 'No file part'}), 400
 
-    file = request.files['pdf']
+    file = request.files['file']
 
     if file.filename == '':
-        return "No selected file", 400
+        logging.error('No selected file')
+        return jsonify({'error': 'No selected file'}), 400
 
-    try:
-        # Read the locked PDF
-        pdf_reader = PdfReader(file)
-        if pdf_reader.is_encrypted:
-            pdf_reader.decrypt('')  # Try to unlock without a password
+    if file and allowed_file(file.filename, ALLOWED_EXTENSIONS):
+        file_path = os.path.join(UPLOAD_FOLDER, secure_filename(file.filename))
+        file.save(file_path)
+        logging.info(f'File saved to {file_path}')
 
-        # Write the unlocked PDF to a new file
-        pdf_writer = PdfWriter()
-        for page_num in range(len(pdf_reader.pages)):
-            pdf_writer.add_page(pdf_reader.pages[page_num])
+        try:
+            # Attempt to unlock PDF
+            pdf_document = fitz.open(file_path)
+            if pdf_document.is_encrypted:
+                success, password = try_numeric_passwords(pdf_document)
+                if success:
+                    # Verify the document has been decrypted
+                    if not pdf_document.is_encrypted:
+                        pdf_data = pdf_document.write()
 
-        output_stream = io.BytesIO()
-        pdf_writer.write(output_stream)
-        output_stream.seek(0)
+                        # Send the unlocked PDF file back to the client
+                        return send_file(
+                            BytesIO(pdf_data),
+                            mimetype='application/pdf',
+                            as_attachment=True,
+                            download_name=f'unlocked_{file.filename}'
+                        )
+                    else:
+                        return jsonify({'error': 'PDF is still encrypted after trying passwords'}), 400
+                else:
+                    return jsonify({'error': 'Failed to unlock PDF with numeric passwords'}), 400
+            else:
+                return jsonify({'error': 'PDF is not password protected'}), 400
+        except Exception as e:
+            logging.error(f'Error unlocking PDF: {e}')
+            return jsonify({'error': f'Error unlocking PDF: {str(e)}'}), 500
+    else:
+        logging.error('Invalid file type, only PDF files are allowed')
+        return jsonify({'error': 'Invalid file type, only PDF files are allowed'}), 400
 
-        return send_file(output_stream, as_attachment=True, download_name='unlocked.pdf', mimetype='application/pdf')
-
-    except Exception as e:
-        return str(e), 500
 
 @app.route('/upload-protect-pdf', methods=['POST'])
 def upload_protect_pdf():
