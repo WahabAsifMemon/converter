@@ -643,7 +643,7 @@ def unlock_pdf():
                         BytesIO(pdf_data),
                         mimetype='application/pdf',
                         as_attachment=True,
-                        attachment_filename=f'unlocked_{file.filename}'
+                        download_name=f'unlocked_{file.filename}'
                     )
                 else:
                     return jsonify({'error': 'Failed to unlock PDF with numeric passwords'}), 400
@@ -655,6 +655,7 @@ def unlock_pdf():
     else:
         logging.error('Invalid file type, only PDF files are allowed')
         return jsonify({'error': 'Invalid file type, only PDF files are allowed'}), 400
+
 
 @app.route('/upload-protect-pdf', methods=['POST'])
 def upload_protect_pdf():
